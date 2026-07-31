@@ -24,14 +24,14 @@ generate_markdown() {
         "| Host | Port | Namespace | Status | TLS 1.2 | TLS 1.3 | Cipher Grade |",
         "|------|------|-----------|--------|---------|---------|--------------|",
         (.items // [])[] |
-        "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.compliance // "-") | \(.status.tlsVersions.tls12 // false) | \(.status.tlsVersions.tls13 // false) | \(.status.overallCipherGrade // "-") |"
+        "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.tlsVersions.tls12 // false) | \(.status.tlsVersions.tls13 // false) | \(.status.overallCipherGrade // "-") |"
     ' "$json_file" > "$md_file" 2>/dev/null || {
         jq -r '
             "# TLS Compliance Audit Report\n",
             "| Host | Port | Namespace | Status | Cipher Grade |",
             "|------|------|-----------|--------|--------------|",
             (.[] |
-            "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.compliance // "-") | \(.status.overallCipherGrade // "-") |")
+            "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.overallCipherGrade // "-") |")
         ' "$json_file" > "$md_file" 2>/dev/null || {
             echo "# TLS Compliance Audit Report" > "$md_file"
             echo "" >> "$md_file"
@@ -52,7 +52,7 @@ generate_junit() {
 
     jq -r '
         def items: if type == "object" and has("items") then .items else . end;
-        def count_status(s): [items[] | select(.status.compliance == s)] | length;
+        def count_status(s): [items[] | select(.status.complianceStatus == s)] | length;
         def total: [items[]] | length;
 
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
@@ -60,8 +60,8 @@ generate_junit() {
         "  <testsuite name=\"TLS Compliance Audit\" tests=\"\(total)\" failures=\"\(count_status("NonCompliant") + count_status("NoTLS") + count_status("PlaintextHTTP"))\" errors=\"0\">",
         (items[] |
             "    <testcase name=\"\(.spec.host // "unknown"):\(.spec.port // "0") (\(.spec.sourceNamespace // "unknown"))\" classname=\"tls-compliance\">" +
-            (if .status.compliance == "NonCompliant" or .status.compliance == "NoTLS" or .status.compliance == "PlaintextHTTP" then
-                "\n      <failure message=\"\(.status.compliance)\">\(.status.compliance): \(.spec.host // "unknown"):\(.spec.port // "0")</failure>"
+            (if .status.complianceStatus == "NonCompliant" or .status.complianceStatus == "NoTLS" or .status.complianceStatus == "PlaintextHTTP" then
+                "\n      <failure message=\"\(.status.complianceStatus)\">\(.status.complianceStatus): \(.spec.host // "unknown"):\(.spec.port // "0")</failure>"
             else "" end) +
             "\n    </testcase>"
         ),
@@ -101,9 +101,9 @@ print_scan_summary() {
             def items: if type == "object" and has("items") then .items else . end;
             {
                 total: ([items[]] | length),
-                compliant: ([items[] | select(.status.compliance == "Compliant")] | length),
-                non_compliant: ([items[] | select(.status.compliance == "NonCompliant" or .status.compliance == "NoTLS" or .status.compliance == "PlaintextHTTP")] | length),
-                warning: ([items[] | select(.status.compliance == "Warning")] | length)
+                compliant: ([items[] | select(.status.complianceStatus == "Compliant")] | length),
+                non_compliant: ([items[] | select(.status.complianceStatus == "NonCompliant" or .status.complianceStatus == "NoTLS" or .status.complianceStatus == "PlaintextHTTP")] | length),
+                warning: ([items[] | select(.status.complianceStatus == "Warning")] | length)
             }
         ' "$json_file" 2>/dev/null || echo '{"total":0,"compliant":0,"non_compliant":0,"warning":0}')
 

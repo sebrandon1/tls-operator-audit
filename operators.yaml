@@ -1,0 +1,95 @@
+# Target operators for PQC ML-KEM TLS compliance testing
+# Tracked via OCPSTRAT-3303 / OCPSTRAT-3491
+#
+# Each entry maps a Jira key to the operator name (as it appears in CSVs)
+# and the namespaces where the operator and its operands run.
+
+operators:
+  - name: cert-manager-operator
+    jira: CNF-25677
+    project: cert-manager Operator for Red Hat OpenShift
+    namespaces:
+      - cert-manager-operator
+      - cert-manager
+
+  - name: compliance-operator
+    jira: CMP-4503
+    project: Compliance Operator
+    namespaces:
+      - openshift-compliance
+
+  - name: file-integrity-operator
+    jira: CMP-4504
+    project: File Integrity Operator
+    namespaces:
+      - openshift-file-integrity
+
+  - name: security-profiles-operator
+    jira: CMP-4505
+    project: Security Profiles Operator
+    namespaces:
+      - security-profiles-operator
+
+  - name: servicemeshoperator
+    jira: OSSM-13756
+    project: OpenShift Service Mesh
+    namespaces:
+      - openshift-operators
+      - istio-system
+
+  - name: rhacs-operator
+    jira: ROX-33132
+    project: Red Hat Advanced Cluster Security
+    namespaces:
+      - rhacs-operator
+      - stackrox
+
+  - name: openshift-pipelines-operator-rh
+    jira: SRVKP-11858
+    project: OpenShift Pipelines
+    namespaces:
+      - openshift-pipelines
+
+  - name: sandboxed-containers-operator
+    jira: KATA-5144
+    project: OpenShift Sandboxed Containers
+    namespaces:
+      - openshift-sandboxed-containers-operator
+
+  - name: trustee-operator
+    jira: TRUSTEE-80
+    project: Trustee (Confidential Computing)
+    namespaces:
+      - trustee-operator-system
+
+  - name: openshift-gitops-operator
+    jira: GITOPS-10309
+    project: OpenShift GitOps
+    namespaces:
+      - openshift-gitops-operator
+      - openshift-gitops
+
+  - name: rhods-operator
+    jira: RHOAIENG-72334
+    project: Red Hat OpenShift AI
+    namespaces:
+      - redhat-ods-operator
+      - redhat-ods-applications
+
+  - name: skupper-operator
+    jira: CONNLINK-1122
+    project: Red Hat Connectivity Link
+    namespaces:
+      - skupper
+
+  - name: spire-operator
+    jira: SPIRE-568
+    project: SPIRE / Zero Trust Workload Identity
+    namespaces:
+      - spire-operator
+
+  - name: external-secrets-operator
+    jira: ESO-537
+    project: External Secrets Operator
+    namespaces:
+      - external-secrets
