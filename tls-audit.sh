@@ -14,15 +14,17 @@ Usage: $(basename "$0") [OPTIONS]
 Audit OCP operators for TLS compliance using tls-compliance-operator.
 
 Required:
-  --kubeconfig <path>     Path to kubeconfig file
   --operator <name>       Operator name to audit (fuzzy match against CSVs)
 
 Optional:
+  --kubeconfig <path>     Path to kubeconfig (default: \$KUBECONFIG or ~/.kube/config)
   --version <version>     Filter CSV match by version
   --list-operators        List all available operators on the cluster
   --all-operators         Scan every operator on the cluster
   --output-dir <dir>      Results directory (default: results)
   --keep-reports          Do not clean up TLSComplianceReport CRs after scan
+  --verbose               Enable debug output
+  --quiet                 Suppress all output except errors
   -h, --help              Show this help
 
 Examples:
@@ -59,6 +61,10 @@ while [[ $# -gt 0 ]]; do
             ALL_OPERATORS=true; shift ;;
         --keep-reports)
             KEEP_REPORTS=true; shift ;;
+        --verbose)
+            LOG_LEVEL=4; shift ;;
+        --quiet)
+            LOG_LEVEL=0; shift ;;
         -h|--help)
             usage; exit 0 ;;
         *)
@@ -69,17 +75,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validation
-if [[ -z "$KUBECONFIG_PATH" ]]; then
-    log_error "Missing required flag: --kubeconfig"
-    usage
-    exit 1
-fi
-
-if [[ ! -f "$KUBECONFIG_PATH" ]]; then
-    log_error "Kubeconfig file not found: $KUBECONFIG_PATH"
-    exit 1
-fi
-
 if [[ "$LIST_OPERATORS" == "false" && "$ALL_OPERATORS" == "false" && -z "$OPERATOR_NAME" ]]; then
     log_error "Missing required flag: --operator (or use --list-operators / --all-operators)"
     usage
@@ -87,8 +82,7 @@ if [[ "$LIST_OPERATORS" == "false" && "$ALL_OPERATORS" == "false" && -z "$OPERAT
 fi
 
 require_cmd oc jq
-
-export KUBECONFIG="$KUBECONFIG_PATH"
+resolve_kubeconfig "$KUBECONFIG_PATH"
 
 log_info "Connecting to cluster..."
 require_cluster
