@@ -3,6 +3,7 @@
 #
 # catalog/channel: used by tls-test-all.sh to install via OLM
 # catalog: null means not available in any catalog on the cluster
+# v5.0 operators use "redhat-operators", v4.18 fallbacks use "redhat-operators-v418"
 
 operators:
   - name: cert-manager-operator
@@ -71,57 +72,64 @@ operators:
   - name: file-integrity-operator
     jira: CMP-4504
     project: File Integrity Operator
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: stable
     namespaces:
+      - openshift-operators
       - openshift-file-integrity
 
   - name: security-profiles-operator
     jira: CMP-4505
     project: Security Profiles Operator
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: release-alpha-rhel-8
     namespaces:
+      - openshift-operators
       - security-profiles-operator
 
   - name: sandboxed-containers-operator
     jira: KATA-5144
     project: OpenShift Sandboxed Containers
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: stable
     namespaces:
+      - openshift-operators
       - openshift-sandboxed-containers-operator
 
   - name: trustee-operator
     jira: TRUSTEE-80
     project: Trustee (Confidential Computing)
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: stable
     namespaces:
+      - openshift-operators
       - trustee-operator-system
 
   - name: openshift-gitops-operator
     jira: GITOPS-10309
     project: OpenShift GitOps
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: latest
     namespaces:
+      - openshift-operators
       - openshift-gitops-operator
       - openshift-gitops
 
   - name: rhods-operator
     jira: RHOAIENG-72334
     project: Red Hat OpenShift AI
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: stable
     namespaces:
+      - openshift-operators
       - redhat-ods-operator
       - redhat-ods-applications
 
-  - name: spire-operator
+  - name: openshift-zero-trust-workload-identity-manager
     jira: SPIRE-568
     project: SPIRE / Zero Trust Workload Identity
-    catalog: null
-    channel: null
+    catalog: redhat-operators-v418
+    channel: stable-v1
     namespaces:
-      - spire-operator
+      - openshift-operators
+      - openshift-zero-trust-workload-identity-manager
