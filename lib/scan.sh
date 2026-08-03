@@ -14,11 +14,28 @@ scan_cleanup() {
     oc delete namespace "${SCAN_NAMESPACE}" --ignore-not-found=true 2>/dev/null || true
 }
 
+_SCAN_PREV_EXIT_TRAP=""
+_SCAN_PREV_INT_TRAP=""
+_SCAN_PREV_TERM_TRAP=""
+
+_scan_finish() {
+    scan_cleanup
+    # shellcheck disable=SC2064
+    eval "${_SCAN_PREV_EXIT_TRAP:-trap - EXIT}"
+    # shellcheck disable=SC2064
+    eval "${_SCAN_PREV_INT_TRAP:-trap - INT}"
+    # shellcheck disable=SC2064
+    eval "${_SCAN_PREV_TERM_TRAP:-trap - TERM}"
+}
+
 run_scan() {
     local target_namespace="$1"
     local results_dir="$2"
     local image="$3"
 
+    _SCAN_PREV_EXIT_TRAP=$(trap -p EXIT || true)
+    _SCAN_PREV_INT_TRAP=$(trap -p INT || true)
+    _SCAN_PREV_TERM_TRAP=$(trap -p TERM || true)
     trap scan_cleanup EXIT INT TERM
 
     log_info "Creating scan namespace and RBAC..."
@@ -134,6 +151,7 @@ EOF
         else
             log_error "Scan timed out or failed to start."
             SCAN_EXIT_CODE=2
+            _scan_finish
             return
         fi
     fi
@@ -145,6 +163,7 @@ EOF
         if [[ -z "${SCAN_EXIT_CODE}" ]]; then
             log_error "Container did not terminate."
             SCAN_EXIT_CODE=2
+            _scan_finish
             return
         fi
         oc cp "${SCAN_NAMESPACE}/${pod}:/results/report.json" "${results_dir}/report.json" 2>/dev/null || true
@@ -155,4 +174,6 @@ EOF
     else
         log_warn "Could not retrieve results file from scan pod."
     fi
+
+    _scan_finish
 }

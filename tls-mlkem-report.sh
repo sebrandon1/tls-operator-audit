@@ -29,8 +29,8 @@ ALL_NAMESPACES=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --kubeconfig)     KUBECONFIG_PATH="$2"; shift 2 ;;
-        --operators)      OPERATORS_FILE="$2"; shift 2 ;;
+        --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
+        --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
         --all-namespaces) ALL_NAMESPACES=true; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
@@ -122,8 +122,6 @@ has_failure=false
 
 for i in $(seq 0 $((operator_count - 1))); do
     op_name=$(yq -r ".operators[$i].name" "$OPERATORS_FILE")
-    op_project=$(yq -r ".operators[$i].project" "$OPERATORS_FILE")
-    op_jira=$(yq -r ".operators[$i].jira" "$OPERATORS_FILE")
     ns_count=$(yq ".operators[$i].namespaces | length" "$OPERATORS_FILE")
 
     # Check if the operator is installed (has a matching CSV)

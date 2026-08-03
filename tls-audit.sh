@@ -46,13 +46,13 @@ KEEP_REPORTS=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --kubeconfig)
-            KUBECONFIG_PATH="$2"; shift 2 ;;
+            require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
         --operator)
-            OPERATOR_NAME="$2"; shift 2 ;;
+            require_arg "$1" "${2:-}"; OPERATOR_NAME="$2"; shift 2 ;;
         --version)
-            OPERATOR_VERSION="$2"; shift 2 ;;
+            require_arg "$1" "${2:-}"; OPERATOR_VERSION="$2"; shift 2 ;;
         --output-dir)
-            OUTPUT_DIR="$2"; shift 2 ;;
+            require_arg "$1" "${2:-}"; OUTPUT_DIR="$2"; shift 2 ;;
         --list-operators)
             LIST_OPERATORS=true; shift ;;
         --all-operators)
@@ -111,7 +111,7 @@ audit_operator() {
     local op_name="$1"
     local op_namespace="$2"
     local op_display="$3"
-    local op_version="$4"
+    local _op_version="$4"
     local image="$5"
 
     local timestamp
