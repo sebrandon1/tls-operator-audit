@@ -199,7 +199,11 @@ for i in $(seq 0 $((operator_count - 1))); do
 
     if [[ "$SKIP_TEARDOWN" == "false" ]]; then
         uninstall_operator "$op_name"
-        cleanup_stale_reports "openshift-operators"
+        local ns_count_cleanup
+        ns_count_cleanup=$(yq ".operators[$i].namespaces | length" "$OPERATORS_FILE")
+        for j in $(seq 0 $((ns_count_cleanup - 1))); do
+            cleanup_stale_reports "$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")"
+        done
     fi
 done
 
