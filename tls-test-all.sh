@@ -33,11 +33,11 @@ SCAN_WAIT=90
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --kubeconfig)     KUBECONFIG_PATH="$2"; shift 2 ;;
-        --operators)      OPERATORS_FILE="$2"; shift 2 ;;
-        --only)           ONLY_OPERATOR="$2"; shift 2 ;;
+        --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
+        --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
+        --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
-        --scan-wait)      SCAN_WAIT="$2"; shift 2 ;;
+        --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac

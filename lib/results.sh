@@ -21,17 +21,17 @@ generate_markdown() {
 
     jq -r '
         "# TLS Compliance Audit Report\n",
-        "| Host | Port | Namespace | Status | TLS 1.2 | TLS 1.3 | Cipher Grade |",
-        "|------|------|-----------|--------|---------|---------|--------------|",
-        (.items // [])[] |
-        "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.tlsVersions.tls12 // false) | \(.status.tlsVersions.tls13 // false) | \(.status.overallCipherGrade // "-") |"
+        "| Host | Port | Namespace | Status | TLS 1.2 | TLS 1.3 | Cipher Grade | ML-KEM | PQC Readiness |",
+        "|------|------|-----------|--------|---------|---------|--------------|--------|---------------|",
+        ((.items // [])[] |
+        "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.tlsVersions.tls12 // false) | \(.status.tlsVersions.tls13 // false) | \(.status.overallCipherGrade // "-") | \(.status.mlkemSupported // false) | \(.status.pqcReadiness // "-") |")
     ' "$json_file" > "$md_file" 2>/dev/null || {
         jq -r '
             "# TLS Compliance Audit Report\n",
-            "| Host | Port | Namespace | Status | Cipher Grade |",
-            "|------|------|-----------|--------|--------------|",
+            "| Host | Port | Namespace | Status | Cipher Grade | ML-KEM | PQC Readiness |",
+            "|------|------|-----------|--------|--------------|--------|---------------|",
             (.[] |
-            "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.overallCipherGrade // "-") |")
+            "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.overallCipherGrade // "-") | \(.status.mlkemSupported // false) | \(.status.pqcReadiness // "-") |")
         ' "$json_file" > "$md_file" 2>/dev/null || {
             echo "# TLS Compliance Audit Report" > "$md_file"
             echo "" >> "$md_file"
@@ -54,14 +54,25 @@ generate_junit() {
         def items: if type == "object" and has("items") then .items else . end;
         def count_status(s): [items[] | select(.status.complianceStatus == s)] | length;
         def total: [items[]] | length;
+        def mlkem_failures: [items[] | select(.status.mlkemSupported != true)] | length;
 
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<testsuites>",
-        "  <testsuite name=\"TLS Compliance Audit\" tests=\"\(total)\" failures=\"\(count_status("NonCompliant") + count_status("NoTLS") + count_status("PlaintextHTTP"))\" errors=\"0\">",
+        "  <testsuite name=\"TLS Compliance\" tests=\"\(total)\" failures=\"\(count_status("NonCompliant") + count_status("NoTLS") + count_status("PlaintextHTTP"))\" errors=\"0\">",
         (items[] |
             "    <testcase name=\"\(.spec.host // "unknown"):\(.spec.port // "0") (\(.spec.sourceNamespace // "unknown"))\" classname=\"tls-compliance\">" +
+            "\n      <properties><property name=\"mlkemSupported\" value=\"\(.status.mlkemSupported // false)\"/><property name=\"pqcReadiness\" value=\"\(.status.pqcReadiness // "Unknown")\"/></properties>" +
             (if .status.complianceStatus == "NonCompliant" or .status.complianceStatus == "NoTLS" or .status.complianceStatus == "PlaintextHTTP" then
                 "\n      <failure message=\"\(.status.complianceStatus)\">\(.status.complianceStatus): \(.spec.host // "unknown"):\(.spec.port // "0")</failure>"
+            else "" end) +
+            "\n    </testcase>"
+        ),
+        "  </testsuite>",
+        "  <testsuite name=\"ML-KEM PQC Compliance\" tests=\"\(total)\" failures=\"\(mlkem_failures)\" errors=\"0\">",
+        (items[] |
+            "    <testcase name=\"mlkem:\(.spec.host // "unknown"):\(.spec.port // "0") (\(.spec.sourceNamespace // "unknown"))\" classname=\"pqc-compliance\">" +
+            (if .status.mlkemSupported != true then
+                "\n      <failure message=\"ML-KEM not supported\">Endpoint \(.spec.host // "unknown"):\(.spec.port // "0") does not support ML-KEM (mlkemSupported=\(.status.mlkemSupported // false), pqcReadiness=\(.status.pqcReadiness // "Unknown"))</failure>"
             else "" end) +
             "\n    </testcase>"
         ),

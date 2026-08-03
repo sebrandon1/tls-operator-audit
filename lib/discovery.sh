@@ -128,6 +128,7 @@ discover_operator() {
     OPERATOR_CSV_NAME=$(echo "$matches" | jq -r '.[0].csv_name')
     OPERATOR_NAMESPACE=$(echo "$matches" | jq -r '.[0].namespace')
     OPERATOR_DISPLAY_NAME=$(echo "$matches" | jq -r '.[0].display')
+    # shellcheck disable=SC2034
     OPERATOR_VERSION=$(echo "$matches" | jq -r '.[0].version')
 
     log_success "Found: $OPERATOR_DISPLAY_NAME ($OPERATOR_CSV_NAME) in namespace '$OPERATOR_NAMESPACE'"
@@ -137,6 +138,7 @@ discover_all_operators() {
     local csv_json
     csv_json=$(oc get csv -A -o json 2>/dev/null)
 
+    # shellcheck disable=SC2034
     ALL_OPERATORS_LIST=$(echo "$csv_json" | jq -r '
         [.items[]
         | select(.status.phase == "Succeeded")

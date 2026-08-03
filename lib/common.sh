@@ -37,11 +37,21 @@ case "$(echo "${LOG_LEVEL}" | tr '[:upper:]' '[:lower:]')" in
     *)         LOG_LEVEL=3 ;;
 esac
 
-log_error() { [[ $LOG_LEVEL -ge 1 ]] && echo -e "${RED}[ERROR]${NC} $*" >&2; }
-log_warn()  { [[ $LOG_LEVEL -ge 2 ]] && echo -e "${YELLOW}[WARN]${NC} $*"; }
-log_info()  { [[ $LOG_LEVEL -ge 3 ]] && echo -e "${BLUE}[INFO]${NC} $*"; }
-log_success() { [[ $LOG_LEVEL -ge 3 ]] && echo -e "${GREEN}[OK]${NC} $*"; }
-log_debug() { [[ $LOG_LEVEL -ge 4 ]] && echo -e "${CYAN}[DEBUG]${NC} $*"; }
+log_error()   { if [[ $LOG_LEVEL -ge 1 ]]; then echo -e "${RED}[ERROR]${NC} $*" >&2; fi; }
+log_warn()    { if [[ $LOG_LEVEL -ge 2 ]]; then echo -e "${YELLOW}[WARN]${NC} $*"; fi; }
+log_info()    { if [[ $LOG_LEVEL -ge 3 ]]; then echo -e "${BLUE}[INFO]${NC} $*"; fi; }
+log_success() { if [[ $LOG_LEVEL -ge 3 ]]; then echo -e "${GREEN}[OK]${NC} $*"; fi; }
+log_debug()   { if [[ $LOG_LEVEL -ge 4 ]]; then echo -e "${CYAN}[DEBUG]${NC} $*"; fi; }
+
+# ============================================================================
+# ARGUMENT PARSING HELPERS
+# ============================================================================
+require_arg() {
+    if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        log_error "Option '$1' requires a value"
+        exit 1
+    fi
+}
 
 # ============================================================================
 # DEPENDENCY CHECKS
@@ -54,7 +64,7 @@ require_cmd() {
             missing=1
         fi
     done
-    [[ $missing -eq 1 ]] && exit 1
+    if [[ $missing -eq 1 ]]; then exit 1; fi
     return 0
 }
 

@@ -73,20 +73,27 @@ wait_for_operator_pods() {
     local elapsed=0
     local interval=10
 
-    log_info "Waiting for operator pods to be ready..."
+    log_info "Waiting for $name pods to be ready..."
 
     while [[ $elapsed -lt $timeout ]]; do
+        local pods_json
+        pods_json=$(oc get pods -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null || echo '{"items":[]}')
+
         local not_ready
-        not_ready=$(oc get pods -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null | jq '
+        not_ready=$(echo "$pods_json" | jq -r --arg name "$name" '
             [.items[]
+            | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))
             | select(.status.phase != "Running" and .status.phase != "Succeeded")]
             | length')
 
         if [[ "$not_ready" -eq 0 ]]; then
             local pod_count
-            pod_count=$(oc get pods -n "${INSTALL_NAMESPACE}" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+            pod_count=$(echo "$pods_json" | jq -r --arg name "$name" '
+                [.items[]
+                | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))]
+                | length')
             if [[ "$pod_count" -gt 0 ]]; then
-                log_success "All $pod_count pods ready in ${INSTALL_NAMESPACE}"
+                log_success "$pod_count pods ready for $name"
                 return 0
             fi
         fi
@@ -95,7 +102,7 @@ wait_for_operator_pods() {
         elapsed=$((elapsed + interval))
     done
 
-    log_warn "Some pods may not be ready yet, proceeding anyway"
+    log_warn "Some $name pods may not be ready yet, proceeding anyway"
 }
 
 uninstall_operator() {
@@ -117,21 +124,24 @@ uninstall_operator() {
         done
     fi
 
-    log_info "Waiting for pods to terminate..."
+    log_info "Waiting for $name pods to terminate..."
     local timeout=120
     local elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
         local pod_count
-        pod_count=$(oc get pods -n "${INSTALL_NAMESPACE}" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+        pod_count=$(oc get pods -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null | jq -r --arg name "$name" '
+            [.items[]
+            | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))]
+            | length')
         if [[ "$pod_count" -eq 0 ]]; then
-            log_success "All pods terminated in ${INSTALL_NAMESPACE}"
+            log_success "All $name pods terminated"
             return 0
         fi
         sleep 5
         elapsed=$((elapsed + 5))
     done
 
-    log_warn "Some pods still running after ${timeout}s, proceeding"
+    log_warn "Some $name pods still running after ${timeout}s, proceeding"
 }
 
 cleanup_stale_reports() {
