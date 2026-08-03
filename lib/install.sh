@@ -133,3 +133,16 @@ uninstall_operator() {
 
     log_warn "Some pods still running after ${timeout}s, proceeding"
 }
+
+cleanup_stale_reports() {
+    local namespace="$1"
+    local stale
+    stale=$(oc get tlscompliancereports -o json 2>/dev/null | \
+        jq -r --arg ns "$namespace" '.items[] | select(.spec.sourceNamespace == $ns) | .metadata.name' 2>/dev/null || true)
+    if [[ -n "$stale" ]]; then
+        local count
+        count=$(echo "$stale" | wc -l | tr -d ' ')
+        echo "$stale" | xargs -r oc delete tlscompliancereport 2>/dev/null || true
+        log_debug "Cleaned up $count stale CRs from $namespace"
+    fi
+}

@@ -199,6 +199,7 @@ for i in $(seq 0 $((operator_count - 1))); do
 
     if [[ "$SKIP_TEARDOWN" == "false" ]]; then
         uninstall_operator "$op_name"
+        cleanup_stale_reports "openshift-operators"
     fi
 done
 
@@ -217,7 +218,7 @@ for idx in "${!SUMMARY_NAMES[@]}"; do
     local_mlkem="${SUMMARY_MLKEM[$idx]}"
     local_status="${SUMMARY_STATUS[$idx]}"
 
-    local color="$NC"
+    color="$NC"
     case "$local_status" in
         PASS)    color="$GREEN" ;;
         PARTIAL) color="$YELLOW" ;;
