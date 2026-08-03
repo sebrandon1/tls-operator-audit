@@ -3,7 +3,7 @@
 #
 # catalog/channel: used by tls-test-all.sh to install via OLM
 # catalog: null means not available in any catalog on the cluster
-# v5.0 operators use "redhat-operators", v4.18 fallbacks use "redhat-operators-v418"
+# v5.0 operators use "redhat-operators", v4.18 fallbacks use "redhat-operators-v422"
 
 operators:
   - name: cert-manager-operator
@@ -72,7 +72,7 @@ operators:
   - name: file-integrity-operator
     jira: CMP-4504
     project: File Integrity Operator
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: stable
     namespaces:
       - openshift-operators
@@ -81,7 +81,7 @@ operators:
   - name: security-profiles-operator
     jira: CMP-4505
     project: Security Profiles Operator
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: release-alpha-rhel-8
     namespaces:
       - openshift-operators
@@ -90,7 +90,7 @@ operators:
   - name: sandboxed-containers-operator
     jira: KATA-5144
     project: OpenShift Sandboxed Containers
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: stable
     namespaces:
       - openshift-operators
@@ -99,7 +99,7 @@ operators:
   - name: trustee-operator
     jira: TRUSTEE-80
     project: Trustee (Confidential Computing)
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: stable
     namespaces:
       - openshift-operators
@@ -108,7 +108,7 @@ operators:
   - name: openshift-gitops-operator
     jira: GITOPS-10309
     project: OpenShift GitOps
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: latest
     namespaces:
       - openshift-operators
@@ -118,7 +118,7 @@ operators:
   - name: rhods-operator
     jira: RHOAIENG-72334
     project: Red Hat OpenShift AI
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: stable
     namespaces:
       - openshift-operators
@@ -128,7 +128,7 @@ operators:
   - name: openshift-zero-trust-workload-identity-manager
     jira: SPIRE-568
     project: SPIRE / Zero Trust Workload Identity
-    catalog: redhat-operators-v418
+    catalog: redhat-operators-v422
     channel: stable-v1
     namespaces:
       - openshift-operators
