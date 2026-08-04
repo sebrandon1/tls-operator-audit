@@ -7,18 +7,18 @@ source "$SCRIPT_DIR/lib/discovery.sh"
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") --kubeconfig <path> [OPTIONS]
+Usage: $(basename "$0") [OPTIONS]
 
 Query existing TLSComplianceReport CRs to assess ML-KEM/PQC compliance
 for operators listed in operators.yaml. Requires tls-compliance-operator
 to be running on the cluster (no new scan is deployed).
 
-Required:
-  --kubeconfig <path>     Path to kubeconfig file
-
-Optional:
+Options:
+  --kubeconfig <path>     Path to kubeconfig (default: \$KUBECONFIG or ~/.kube/config)
   --operators <file>      Operators list file (default: operators.yaml)
   --all-namespaces        Report on all namespaces, not just listed operators
+  --verbose               Enable debug output
+  --quiet                 Suppress all output except errors
   -h, --help              Show this help
 EOF
 }
@@ -32,22 +32,15 @@ while [[ $# -gt 0 ]]; do
         --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
         --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
         --all-namespaces) ALL_NAMESPACES=true; shift ;;
+        --verbose)        LOG_LEVEL=4; shift ;;
+        --quiet)          LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
 
-if [[ -z "$KUBECONFIG_PATH" ]]; then
-    log_error "Missing required flag: --kubeconfig"
-    exit 1
-fi
-if [[ ! -f "$KUBECONFIG_PATH" ]]; then
-    log_error "Kubeconfig file not found: $KUBECONFIG_PATH"
-    exit 1
-fi
-
 require_cmd oc jq
-export KUBECONFIG="$KUBECONFIG_PATH"
+resolve_kubeconfig "$KUBECONFIG_PATH"
 
 log_info "Connecting to cluster..."
 require_cluster

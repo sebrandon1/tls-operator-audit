@@ -8,19 +8,19 @@ source "$SCRIPT_DIR/lib/install.sh"
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") --kubeconfig <path> [OPTIONS]
+Usage: $(basename "$0") [OPTIONS]
 
 Install each operator from operators.yaml one at a time, scan for ML-KEM
 compliance using the tls-compliance-operator, collect results, then tear down.
 
-Required:
-  --kubeconfig <path>     Path to kubeconfig file
-
-Optional:
+Options:
+  --kubeconfig <path>     Path to kubeconfig (default: \$KUBECONFIG or ~/.kube/config)
   --operators <file>      Operators list file (default: operators.yaml)
   --only <name>           Test a single operator from the list
   --skip-teardown         Leave operators installed after scanning
   --scan-wait <seconds>   Time to wait for endpoint discovery (default: 90)
+  --verbose               Enable debug output
+  --quiet                 Suppress all output except errors
   -h, --help              Show this help
 EOF
 }
@@ -38,23 +38,19 @@ while [[ $# -gt 0 ]]; do
         --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
+        --verbose)        LOG_LEVEL=4; shift ;;
+        --quiet)          LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
 
-if [[ -z "$KUBECONFIG_PATH" ]]; then
-    log_error "Missing required flag: --kubeconfig"; exit 1
-fi
-if [[ ! -f "$KUBECONFIG_PATH" ]]; then
-    log_error "Kubeconfig file not found: $KUBECONFIG_PATH"; exit 1
-fi
 if [[ ! -f "$OPERATORS_FILE" ]]; then
     log_error "Operators file not found: $OPERATORS_FILE"; exit 1
 fi
 
 require_cmd oc jq yq
-export KUBECONFIG="$KUBECONFIG_PATH"
+resolve_kubeconfig "$KUBECONFIG_PATH"
 
 log_info "Connecting to cluster..."
 require_cluster

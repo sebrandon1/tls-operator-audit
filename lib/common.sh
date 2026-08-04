@@ -54,6 +54,33 @@ require_arg() {
 }
 
 # ============================================================================
+# KUBECONFIG RESOLUTION
+# ============================================================================
+resolve_kubeconfig() {
+    local flag_value="${1:-}"
+    local resolved=""
+    local env_value="${KUBECONFIG:-}"
+
+    if [[ -n "$flag_value" ]]; then
+        resolved="$flag_value"
+    elif [[ -n "$env_value" ]]; then
+        resolved="$env_value"
+    elif [[ -f "$HOME/.kube/config" ]]; then
+        resolved="$HOME/.kube/config"
+    else
+        log_error "No kubeconfig found. Provide --kubeconfig, set KUBECONFIG, or place config at ~/.kube/config"
+        exit 1
+    fi
+
+    if [[ ! -f "$resolved" ]]; then
+        log_error "Kubeconfig file not found: $resolved"
+        exit 1
+    fi
+
+    export KUBECONFIG="$resolved"
+}
+
+# ============================================================================
 # DEPENDENCY CHECKS
 # ============================================================================
 require_cmd() {
