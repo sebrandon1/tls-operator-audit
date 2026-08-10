@@ -4,8 +4,9 @@ INSTALL_NAMESPACE="openshift-operators"
 
 is_operator_installed() {
     local name="$1"
+    local csv_json="$2"
     local count
-    count=$(oc get csv -A -o json 2>/dev/null | jq -r --arg name "$name" '
+    count=$(echo "$csv_json" | jq -r --arg name "$name" '
         [.items[]
         | select(.status.phase == "Succeeded")
         | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))]

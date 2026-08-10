@@ -150,3 +150,15 @@ discover_all_operators() {
           }
         ]')
 }
+
+# ============================================================================
+# NAMESPACE FILTER
+# ============================================================================
+
+build_ns_filter() {
+    local operators_file="$1"
+    local index="$2"
+    yq -r "(.operators[$index].namespaces // [])
+        | map(\".spec.sourceNamespace == \\\"\" + . + \"\\\"\")
+        | join(\" or \")" "$operators_file"
+}

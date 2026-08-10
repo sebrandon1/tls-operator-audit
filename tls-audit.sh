@@ -62,9 +62,9 @@ while [[ $# -gt 0 ]]; do
         --keep-reports)
             KEEP_REPORTS=true; shift ;;
         --verbose)
-            LOG_LEVEL=4; shift ;;
+            export LOG_LEVEL=4; shift ;;
         --quiet)
-            LOG_LEVEL=0; shift ;;
+            export LOG_LEVEL=0; shift ;;
         -h|--help)
             usage; exit 0 ;;
         *)

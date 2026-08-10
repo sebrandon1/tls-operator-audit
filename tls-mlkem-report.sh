@@ -32,8 +32,8 @@ while [[ $# -gt 0 ]]; do
         --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
         --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
         --all-namespaces) ALL_NAMESPACES=true; shift ;;
-        --verbose)        LOG_LEVEL=4; shift ;;
-        --quiet)          LOG_LEVEL=0; shift ;;
+        --verbose)        export LOG_LEVEL=4; shift ;;
+        --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
@@ -112,13 +112,18 @@ printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "OPERATOR" "INSTALLED" "TOTAL" "COM
 printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "--------" "---------" "-----" "---------" "------" "---------" "------"
 
 has_failure=false
+CSV_CACHE=$(oc get csv -A -o json 2>/dev/null)
+
+declare -a NS_FILTERS=()
+for i in $(seq 0 $((operator_count - 1))); do
+    NS_FILTERS+=("$(build_ns_filter "$OPERATORS_FILE" "$i")")
+done
 
 for i in $(seq 0 $((operator_count - 1))); do
     op_name=$(yq -r ".operators[$i].name" "$OPERATORS_FILE")
-    ns_count=$(yq ".operators[$i].namespaces | length" "$OPERATORS_FILE")
 
     # Check if the operator is installed (has a matching CSV)
-    csv_match=$(oc get csv -A -o json 2>/dev/null | jq -r --arg name "$op_name" '
+    csv_match=$(echo "$CSV_CACHE" | jq -r --arg name "$op_name" '
         [.items[] | select(.status.phase == "Succeeded") |
          select((.metadata.name | ascii_downcase | contains($name | ascii_downcase))
             or (.spec.displayName // "" | ascii_downcase | contains($name | ascii_downcase)))]
@@ -131,16 +136,9 @@ for i in $(seq 0 $((operator_count - 1))); do
     fi
 
     # Collect stats across all namespaces for this operator
-    ns_filter=""
-    for j in $(seq 0 $((ns_count - 1))); do
-        ns=$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")
-        if [[ -n "$ns_filter" ]]; then
-            ns_filter="${ns_filter} or "
-        fi
-        ns_filter="${ns_filter}.spec.sourceNamespace == \"$ns\""
-    done
+    ns_filter="${NS_FILTERS[$i]}"
 
-    stats=$(echo "$ALL_REPORTS" | jq --argjson dummy 0 "
+    stats=$(echo "$ALL_REPORTS" | jq "
         [.items[] | select($ns_filter)]
         | {
             total: length,
@@ -193,16 +191,7 @@ echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━�
 
 for i in $(seq 0 $((operator_count - 1))); do
     op_name=$(yq -r ".operators[$i].name" "$OPERATORS_FILE")
-    ns_count=$(yq ".operators[$i].namespaces | length" "$OPERATORS_FILE")
-
-    ns_filter=""
-    for j in $(seq 0 $((ns_count - 1))); do
-        ns=$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")
-        if [[ -n "$ns_filter" ]]; then
-            ns_filter="${ns_filter} or "
-        fi
-        ns_filter="${ns_filter}.spec.sourceNamespace == \"$ns\""
-    done
+    ns_filter="${NS_FILTERS[$i]}"
 
     endpoints=$(echo "$ALL_REPORTS" | jq -r "
         [.items[] | select($ns_filter)]

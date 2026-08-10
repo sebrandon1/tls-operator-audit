@@ -38,8 +38,8 @@ while [[ $# -gt 0 ]]; do
         --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
-        --verbose)        LOG_LEVEL=4; shift ;;
-        --quiet)          LOG_LEVEL=0; shift ;;
+        --verbose)        export LOG_LEVEL=4; shift ;;
+        --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
@@ -63,6 +63,8 @@ operator_count=$(yq '.operators | length' "$OPERATORS_FILE")
 RESULTS_BASE="$SCRIPT_DIR/results"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
+CSV_CACHE=$(oc get csv -A -o json 2>/dev/null)
+
 # Collect summary data for final table
 declare -a SUMMARY_NAMES=()
 declare -a SUMMARY_STATUS=()
@@ -75,24 +77,14 @@ collect_endpoint_data() {
     local op_index="$2"
     local results_dir="$3"
 
-    local ns_count
-    ns_count=$(yq ".operators[$op_index].namespaces | length" "$OPERATORS_FILE")
-
-    local ns_filter=""
-    for j in $(seq 0 $((ns_count - 1))); do
-        local ns
-        ns=$(yq -r ".operators[$op_index].namespaces[$j]" "$OPERATORS_FILE")
-        if [[ -n "$ns_filter" ]]; then
-            ns_filter="${ns_filter} or "
-        fi
-        ns_filter="${ns_filter}.spec.sourceNamespace == \"$ns\""
-    done
+    local ns_filter
+    ns_filter=$(build_ns_filter "$OPERATORS_FILE" "$op_index")
 
     local report_json
     report_json=$(oc get tlscompliancereports -o json 2>/dev/null)
 
     local endpoints
-    endpoints=$(echo "$report_json" | jq --argjson dummy 0 "
+    endpoints=$(echo "$report_json" | jq "
         [.items[] | select($ns_filter)]")
 
     echo "$endpoints" > "$results_dir/report.json"
@@ -162,7 +154,7 @@ for i in $(seq 0 $((operator_count - 1))); do
     mkdir -p "$results_dir"
 
     # Check if already installed
-    if is_operator_installed "$op_name"; then
+    if is_operator_installed "$op_name" "$CSV_CACHE"; then
         log_info "Already installed, scanning in-place..."
         collect_endpoint_data "$op_name" "$i" "$results_dir"
         continue
