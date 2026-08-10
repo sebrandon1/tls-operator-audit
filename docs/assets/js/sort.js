@@ -14,10 +14,20 @@
       });
       th.classList.add(asc ? 'sort-asc' : 'sort-desc');
       th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
-      var rows = Array.from(tbody.querySelectorAll('tr'));
-      rows.sort(function(a, b) {
-        var aCell = a.cells[colIndex];
-        var bCell = b.cells[colIndex];
+
+      var allRows = Array.from(tbody.querySelectorAll('tr'));
+      var groups = [];
+      allRows.forEach(function(row) {
+        if (row.classList.contains('detail-row')) {
+          if (groups.length) groups[groups.length - 1].push(row);
+        } else {
+          groups.push([row]);
+        }
+      });
+
+      groups.sort(function(a, b) {
+        var aCell = a[0].cells[colIndex];
+        var bCell = b[0].cells[colIndex];
         if (!aCell || !bCell) return 0;
         var aVal = (aCell.getAttribute('data-sort') || aCell.textContent).trim();
         var bVal = (bCell.getAttribute('data-sort') || bCell.textContent).trim();
@@ -26,7 +36,10 @@
         }
         return (asc ? 1 : -1) * aVal.localeCompare(bVal);
       });
-      rows.forEach(function(row) { tbody.appendChild(row); });
+
+      groups.forEach(function(group) {
+        group.forEach(function(row) { tbody.appendChild(row); });
+      });
     });
   });
 })();

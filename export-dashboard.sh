@@ -16,11 +16,20 @@ Optional:
   --ocp-version <ver>     OCP version for metadata (default: unknown)
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
+
+Scan settings (recorded in history for provenance):
+  --scan-mode <mode>      How scan was run: all-operators | single-operator | operators-yaml
+  --scan-operator <name>  Operator name (if single-operator mode)
+  --scan-kubeconfig <path> Kubeconfig path used
+  --scan-version <ver>    Version filter used (if any)
+  --scan-keep-reports     Whether --keep-reports was used
+
   -h, --help              Show this help
 
 Examples:
   $(basename "$0")
   $(basename "$0") --results-dir results --cluster cnfdt16 --ocp-version 4.18.6
+  $(basename "$0") --cluster cnfdt16 --ocp-version 5.0 --scan-mode all-operators
 EOF
 }
 
@@ -28,6 +37,11 @@ EOF
 RESULTS_DIR="results"
 CLUSTER="unknown"
 OCP_VERSION="unknown"
+SCAN_MODE=""
+SCAN_OPERATOR=""
+SCAN_KUBECONFIG=""
+SCAN_VERSION=""
+SCAN_KEEP_REPORTS=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -38,6 +52,16 @@ while [[ $# -gt 0 ]]; do
             require_arg "$1" "${2:-}"; CLUSTER="$2"; shift 2 ;;
         --ocp-version)
             require_arg "$1" "${2:-}"; OCP_VERSION="$2"; shift 2 ;;
+        --scan-mode)
+            require_arg "$1" "${2:-}"; SCAN_MODE="$2"; shift 2 ;;
+        --scan-operator)
+            require_arg "$1" "${2:-}"; SCAN_OPERATOR="$2"; shift 2 ;;
+        --scan-kubeconfig)
+            require_arg "$1" "${2:-}"; SCAN_KUBECONFIG="$2"; shift 2 ;;
+        --scan-version)
+            require_arg "$1" "${2:-}"; SCAN_VERSION="$2"; shift 2 ;;
+        --scan-keep-reports)
+            SCAN_KEEP_REPORTS=true; shift ;;
         --verbose)
             export LOG_LEVEL=4; shift ;;
         --quiet)
@@ -315,6 +339,24 @@ else
     existing_history="[]"
 fi
 
+# Build scan_settings object if any --scan-* flags were provided
+scan_settings_json="null"
+if [[ -n "$SCAN_MODE" || -n "$SCAN_OPERATOR" || -n "$SCAN_KUBECONFIG" || -n "$SCAN_VERSION" || "$SCAN_KEEP_REPORTS" == "true" ]]; then
+    scan_settings_json=$(jq -n \
+        --arg mode "$SCAN_MODE" \
+        --arg operator "$SCAN_OPERATOR" \
+        --arg kubeconfig "$SCAN_KUBECONFIG" \
+        --arg version "$SCAN_VERSION" \
+        --argjson keep_reports "$SCAN_KEEP_REPORTS" \
+        '{
+            mode: (if $mode != "" then $mode else null end),
+            operator: (if $operator != "" then $operator else null end),
+            kubeconfig: (if $kubeconfig != "" then $kubeconfig else null end),
+            version: (if $version != "" then $version else null end),
+            keep_reports: $keep_reports
+        } | with_entries(select(.value != null and .value != false))')
+fi
+
 # Build a history entry (summary only, no full endpoint data)
 history_entry=$(jq -n \
     --arg scan_date "$scan_date" \
@@ -328,6 +370,7 @@ history_entry=$(jq -n \
     --argjson total_endpoints "$total_endpoints_all" \
     --argjson mlkem_endpoints "$mlkem_endpoints_all" \
     --argjson mlkem_percent "$mlkem_percent" \
+    --argjson scan_settings "$scan_settings_json" \
     '{
         scan_date: $scan_date,
         cluster: $cluster,
@@ -342,7 +385,7 @@ history_entry=$(jq -n \
             mlkem_endpoints: $mlkem_endpoints,
             mlkem_percent: $mlkem_percent
         }
-    }')
+    } + (if $scan_settings != null then {scan_settings: $scan_settings} else {} end)')
 
 updated_history=$(echo "$existing_history" | jq --argjson entry "$history_entry" '. + [$entry]')
 echo "$updated_history" > "$history_file"

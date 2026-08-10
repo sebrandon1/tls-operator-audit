@@ -21,6 +21,7 @@ title: "Scan History"
       <th class="sortable" data-type="number">None</th>
       <th class="sortable" data-type="number">Error</th>
       <th class="sortable" data-type="number">ML-KEM %</th>
+      <th>Settings</th>
     </tr>
   </thead>
   <tbody>
@@ -42,6 +43,34 @@ title: "Scan History"
           </div>
           <span class="progress-label">{{ scan.summary.mlkem_percent }}%</span>
         </div>
+      </td>
+      <td>
+        {% if scan.scan_settings %}
+        <details>
+          <summary>View</summary>
+          <div class="scan-settings-detail">
+            <dl>
+              {% if scan.scan_settings.mode %}
+              <dt>Mode</dt><dd>{{ scan.scan_settings.mode }}</dd>
+              {% endif %}
+              {% if scan.scan_settings.operator %}
+              <dt>Operator</dt><dd>{{ scan.scan_settings.operator }}</dd>
+              {% endif %}
+              {% if scan.scan_settings.kubeconfig %}
+              <dt>Kubeconfig</dt><dd><code>{{ scan.scan_settings.kubeconfig }}</code></dd>
+              {% endif %}
+              {% if scan.scan_settings.version %}
+              <dt>Version</dt><dd>{{ scan.scan_settings.version }}</dd>
+              {% endif %}
+              {% if scan.scan_settings.keep_reports %}
+              <dt>Keep Reports</dt><dd>Yes</dd>
+              {% endif %}
+            </dl>
+          </div>
+        </details>
+        {% else %}
+        <span class="text-muted">&mdash;</span>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
