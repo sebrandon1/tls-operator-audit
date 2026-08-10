@@ -5,11 +5,7 @@ title: "Dashboard"
 
 {% assign data = site.data.scan-results %}
 
-<div class="scan-info">
-  <span>Scanned: <strong>{{ data.scan_date | date: "%Y-%m-%d" }}</strong></span>
-  <span>Cluster: <strong>{{ data.cluster }}</strong></span>
-  <span>OCP: <strong>{{ data.ocp_version }}</strong></span>
-</div>
+{% include scan-info.html data=data %}
 
 <div class="summary-cards">
   <div class="card">
@@ -56,7 +52,6 @@ title: "Dashboard"
   <thead>
     <tr>
       <th class="sortable">Operator</th>
-      <th class="sortable">Project</th>
       <th class="sortable">Jira</th>
       <th class="sortable">Catalog</th>
       <th class="sortable" data-type="number">Endpoints</th>
@@ -68,7 +63,6 @@ title: "Dashboard"
     {% for op in data.operators %}
     <tr data-status="{{ op.status | downcase }}">
       <td><a href="{{ '/operators/' | append: op.name | relative_url }}">{{ op.name }}</a></td>
-      <td>{{ op.project }}</td>
       <td><a href="https://redhat.atlassian.net/browse/{{ op.jira }}" target="_blank" rel="noopener">{{ op.jira }}</a></td>
       <td>{{ op.catalog }}</td>
       <td data-sort="{{ op.reachable_endpoints }}">

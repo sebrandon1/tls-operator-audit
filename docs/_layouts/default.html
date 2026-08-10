@@ -16,30 +16,37 @@
   </script>
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="{{ '/' | relative_url }}" class="nav-brand">TLS Operator Audit</a>
-      <div class="nav-links">
-        <a href="{{ '/' | relative_url }}">Dashboard</a>
-        <a href="{{ '/history' | relative_url }}">History</a>
-        <a href="https://github.com/sebrandon1/tls-operator-audit" target="_blank" rel="noopener">GitHub</a>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <a href="{{ '/' | relative_url }}">TLS Operator Audit</a>
       </div>
-    </div>
-  </nav>
+      <nav class="sidebar-nav">
+        <a href="{{ '/' | relative_url }}" {% if page.url == '/' or page.url == '/index.html' %}class="active"{% endif %}>
+          <span class="nav-icon">&#9632;</span> Operators
+        </a>
+        <a href="{{ '/endpoints' | relative_url }}" {% if page.url == '/endpoints' or page.url == '/endpoints.html' or page.url == '/endpoints/' %}class="active"{% endif %}>
+          <span class="nav-icon">&#9679;</span> Endpoints
+        </a>
+        <a href="{{ '/history' | relative_url }}" {% if page.url == '/history' or page.url == '/history.html' or page.url == '/history/' %}class="active"{% endif %}>
+          <span class="nav-icon">&#9201;</span> History
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme">
+          <span class="theme-icon-light">&#9790;</span>
+          <span class="theme-icon-dark">&#9788;</span>
+        </button>
+        <a href="https://github.com/sebrandon1/tls-operator-audit" target="_blank" rel="noopener" class="sidebar-github">GitHub</a>
+      </div>
+    </aside>
 
-  <main class="container">
-    {{ content }}
-  </main>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">&#9776;</button>
 
-  <footer class="footer">
-    <div class="footer-inner">
-      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme">
-        <span class="theme-icon-light">&#9790;</span>
-        <span class="theme-icon-dark">&#9788;</span>
-      </button>
-      <span class="footer-text">ML-KEM / PQC TLS Compliance Dashboard</span>
-    </div>
-  </footer>
+    <main class="content">
+      {{ content }}
+    </main>
+  </div>
 
   <script src="{{ '/assets/js/sort.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/filters.js' | relative_url }}"></script>
@@ -60,6 +67,20 @@
         if (s) s.focus();
       }
     });
+    (function() {
+      var toggle = document.getElementById('sidebar-toggle');
+      var sidebar = document.getElementById('sidebar');
+      if (toggle && sidebar) {
+        toggle.addEventListener('click', function() {
+          sidebar.classList.toggle('open');
+        });
+        document.addEventListener('click', function(e) {
+          if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle) {
+            sidebar.classList.remove('open');
+          }
+        });
+      }
+    })();
   </script>
 </body>
 </html>
