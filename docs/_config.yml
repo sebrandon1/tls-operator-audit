@@ -1,0 +1,13 @@
+title: "TLS Operator Audit Dashboard"
+description: "ML-KEM / PQC TLS compliance for Red Hat operators on OpenShift"
+baseurl: "/tls-operator-audit"
+url: "https://sebrandon1.github.io"
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor

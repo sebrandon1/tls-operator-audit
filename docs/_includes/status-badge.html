@@ -1,0 +1,14 @@
+{% assign badge_status = include.status | downcase %}
+{% if badge_status == "pass" %}
+  <span class="badge badge-pass">PASS</span>
+{% elsif badge_status == "partial" %}
+  <span class="badge badge-partial">PARTIAL</span>
+{% elsif badge_status == "none" %}
+  <span class="badge badge-none">NONE</span>
+{% elsif badge_status == "error" %}
+  <span class="badge badge-error">ERROR</span>
+{% elsif badge_status == "fail" %}
+  <span class="badge badge-error">FAIL</span>
+{% else %}
+  <span class="badge">{{ include.status }}</span>
+{% endif %}

@@ -1,0 +1,17 @@
+[
+  {
+    "scan_date": "2026-08-03T16:16:15Z",
+    "cluster": "cnfdt16",
+    "ocp_version": "5.0",
+    "summary": {
+      "total_operators": 14,
+      "pass": 9,
+      "partial": 1,
+      "none": 1,
+      "error": 3,
+      "total_endpoints": 18,
+      "mlkem_endpoints": 17,
+      "mlkem_percent": 94.4
+    }
+  }
+]
