@@ -1,0 +1,53 @@
+---
+layout: default
+title: "Scan History"
+---
+
+<h1>Scan History</h1>
+
+{% assign history = site.data.scan-history %}
+
+{% if history.size > 0 %}
+<div class="table-responsive">
+<table class="data-table">
+  <thead>
+    <tr>
+      <th class="sortable">Scan Date</th>
+      <th class="sortable">Cluster</th>
+      <th class="sortable">OCP Version</th>
+      <th class="sortable" data-type="number">Operators</th>
+      <th class="sortable" data-type="number">Pass</th>
+      <th class="sortable" data-type="number">Partial</th>
+      <th class="sortable" data-type="number">None</th>
+      <th class="sortable" data-type="number">Error</th>
+      <th class="sortable" data-type="number">ML-KEM %</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% assign sorted_history = history | sort: "scan_date" | reverse %}
+    {% for scan in sorted_history %}
+    <tr>
+      <td>{{ scan.scan_date | date: "%Y-%m-%d %H:%M" }}</td>
+      <td>{{ scan.cluster }}</td>
+      <td>{{ scan.ocp_version }}</td>
+      <td>{{ scan.summary.total_operators }}</td>
+      <td>{{ scan.summary.pass }}</td>
+      <td>{{ scan.summary.partial }}</td>
+      <td>{{ scan.summary.none }}</td>
+      <td>{{ scan.summary.error }}</td>
+      <td>
+        <div class="progress-container inline-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ scan.summary.mlkem_percent }}%"></div>
+          </div>
+          <span class="progress-label">{{ scan.summary.mlkem_percent }}%</span>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="no-data">No scan history available. Run <code>export-dashboard.sh</code> to populate.</p>
+{% endif %}

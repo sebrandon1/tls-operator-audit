@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  <script>
+    (function() {
+      var t = localStorage.getItem('theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+      else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="{{ '/' | relative_url }}" class="nav-brand">TLS Operator Audit</a>
+      <div class="nav-links">
+        <a href="{{ '/' | relative_url }}">Dashboard</a>
+        <a href="{{ '/history' | relative_url }}">History</a>
+        <a href="https://github.com/sebrandon1/tls-operator-audit" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    {{ content }}
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme">
+        <span class="theme-icon-light">&#9790;</span>
+        <span class="theme-icon-dark">&#9788;</span>
+      </button>
+      <span class="footer-text">ML-KEM / PQC TLS Compliance Dashboard</span>
+    </div>
+  </footer>
+
+  <script src="{{ '/assets/js/sort.js' | relative_url }}"></script>
+  <script src="{{ '/assets/js/filters.js' | relative_url }}"></script>
+  <script>
+    function toggleTheme() {
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'd') toggleTheme();
+      if (e.key === '/') {
+        e.preventDefault();
+        var s = document.getElementById('table-search');
+        if (s) s.focus();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,42 +1,16 @@
 # tls-operator-audit
 
+[![ML-KEM Compliance](https://img.shields.io/endpoint?url=https%3A%2F%2Fsebrandon1.github.io%2Ftls-operator-audit%2Fbadges%2Fmlkem.json)](https://sebrandon1.github.io/tls-operator-audit/)
+
 Audit OCP operators for ML-KEM/PQC and TLS compliance using the [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator).
 
 Installs each operator one at a time, scans its TLS endpoints for ML-KEM support, collects results, and tears down before moving to the next. Tracked under [OCPSTRAT-3491](https://redhat.atlassian.net/browse/OCPSTRAT-3491) / [OCPSTRAT-3303](https://redhat.atlassian.net/browse/OCPSTRAT-3303).
 
 ## Results
 
-Tested on OCP 5.0 cluster (cnfdt16) on 2026-08-03. Operators sourced from `redhat-operator-index:v5.0` and `redhat-operator-index:v4.22` (fallback for operators not yet in the 5.0 index).
+View the full interactive dashboard at **[sebrandon1.github.io/tls-operator-audit](https://sebrandon1.github.io/tls-operator-audit/)**.
 
-| Operator | Jira | Source | Endpoints | ML-KEM | Status |
-|----------|------|--------|-----------|--------|--------|
-| cert-manager-operator | [CNF-25677](https://redhat.atlassian.net/browse/CNF-25677) | pre-installed | 3 reachable (1 Closed) | 3/3 | **PASS** |
-| compliance-operator | [CMP-4503](https://redhat.atlassian.net/browse/CMP-4503) | pre-installed | 2 reachable (6 Closed) | 2/2 | **PASS** |
-| openshift-pipelines-operator-rh | [SRVKP-11858](https://redhat.atlassian.net/browse/SRVKP-11858) | v5.0 | 1 | 1/1 | **PASS** |
-| rhacs-operator | [ROX-33132](https://redhat.atlassian.net/browse/ROX-33132) | v5.0 | 1 | 1/1 | **PASS** |
-| servicemeshoperator3 | [OSSM-13756](https://redhat.atlassian.net/browse/OSSM-13756) | v5.0 | 1 | 1/1 | **PASS** |
-| skupper-operator | [CONNLINK-1122](https://redhat.atlassian.net/browse/CONNLINK-1122) | v5.0 | 2 | 2/2 | **PASS** |
-| openshift-external-secrets-operator | [ESO-537](https://redhat.atlassian.net/browse/ESO-537) | v5.0 | 1 | 1/1 | **PASS** |
-| file-integrity-operator | [CMP-4504](https://redhat.atlassian.net/browse/CMP-4504) | v4.22 | 0 | - | **NONE** |
-| security-profiles-operator | [CMP-4505](https://redhat.atlassian.net/browse/CMP-4505) | v4.22 | 1 | 1/1 | **PASS** |
-| openshift-gitops-operator | [GITOPS-10309](https://redhat.atlassian.net/browse/GITOPS-10309) | v4.22 | 4 reachable (3 stale) | 4/4 | **PASS** |
-| rhods-operator | [RHOAIENG-72334](https://redhat.atlassian.net/browse/RHOAIENG-72334) | v4.18 only | 2 | 1/2 | **PARTIAL** |
-| sandboxed-containers-operator | [KATA-5144](https://redhat.atlassian.net/browse/KATA-5144) | v4.22 | - | - | **ERROR** |
-| trustee-operator | [TRUSTEE-80](https://redhat.atlassian.net/browse/TRUSTEE-80) | v4.22 | - | - | **ERROR** |
-| openshift-zero-trust-workload-identity-manager | [SPIRE-568](https://redhat.atlassian.net/browse/SPIRE-568) | v4.22 | - | - | **ERROR** |
-
-### Key Findings
-
-- **10 PASS** — All reachable TLS endpoints offer ML-KEM key exchange
-- **1 PARTIAL** — `rhods-operator` has a metrics endpoint (`redhat-ods-operator-controller-manager-metrics-service:8443`) serving PlaintextHTTP instead of TLS
-- **1 NONE** — `file-integrity-operator` exposes no TLS-serving endpoints (controller only)
-- **3 ERROR** — `sandboxed-containers-operator`, `trustee-operator`, and `openshift-zero-trust-workload-identity-manager` won't install on OCP 5.0 from either v4.22 or v4.18 catalog indexes (likely need native 5.0 builds)
-
-### Notes
-
-- "Closed" endpoints are services whose backing pods are not running (e.g., compliance-operator scan ResultServers that only exist during active scans). These are excluded from pass/fail evaluation.
-- Operators installed via AllNamespaces mode run in `openshift-operators`. The test runner installs one operator at a time and cleans up between each to avoid cross-contamination.
-- The v4.22 fallback catalog (`redhat-operators-v422`) was added as a separate CatalogSource to avoid overlapping with the v5.0 index.
+The dashboard shows per-operator ML-KEM compliance status with drill-down into individual TLS endpoints, cipher suites, certificate details, and scan history.
 
 ## Prerequisites
 
@@ -79,6 +53,14 @@ Deploys a scoped run-once scan Job for a specific operator. Produces JSON, Markd
 ```bash
 ./tls-audit.sh --operator cert-manager-operator --kubeconfig ~/kubeconfig
 ./tls-audit.sh --list-operators --kubeconfig ~/kubeconfig
+```
+
+### `export-dashboard.sh` — Generate dashboard data from local results
+
+Reads the `results/` directory and generates the JSON data files, badge, and operator pages for the GitHub Pages dashboard.
+
+```bash
+./export-dashboard.sh --cluster cnfdt16 --ocp-version 5.0
 ```
 
 ## Output
