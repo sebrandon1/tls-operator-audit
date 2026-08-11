@@ -31,6 +31,9 @@
         <a href="{{ '/history' | relative_url }}" {% if page.url == '/history' or page.url == '/history.html' or page.url == '/history/' %}class="active"{% endif %}>
           <span class="nav-icon">&#9201;</span> History
         </a>
+        <a href="{{ '/versions' | relative_url }}" {% if page.url == '/versions' or page.url == '/versions.html' or page.url == '/versions/' %}class="active"{% endif %}>
+          <span class="nav-icon">&#9881;</span> Versions
+        </a>
       </nav>
       <div class="sidebar-footer">
         <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light theme">
