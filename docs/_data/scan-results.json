@@ -8846,7 +8846,7 @@
     {
       "name": "ptp-operator",
       "catalog": "redhat-operators-v422",
-      "jira": "",
+      "jira": "CNF-22665",
       "project": "PTP Operator",
       "status": "PASS",
       "version": "4.22.0-202608042055",
@@ -9131,7 +9131,7 @@
     {
       "name": "metallb-operator",
       "catalog": "redhat-operators-v422",
-      "jira": "",
+      "jira": "CNF-21983",
       "project": "MetalLB Operator",
       "status": "PARTIAL",
       "version": "4.22.0-202608042055",
@@ -9988,7 +9988,7 @@
     {
       "name": "sriov-network-operator",
       "catalog": "redhat-operators-v422",
-      "jira": "",
+      "jira": "CNF-21984",
       "project": "SR-IOV Network Operator",
       "status": "NONE",
       "version": "4.22.0-202608050337",
@@ -10002,7 +10002,7 @@
     {
       "name": "numaresources-operator",
       "catalog": "redhat-operators-v422",
-      "jira": "",
+      "jira": "CNF-25303",
       "project": "NUMA Resources Operator",
       "status": "PARTIAL",
       "version": "4.22.1",
@@ -10897,7 +10897,7 @@
     {
       "name": "lifecycle-agent",
       "catalog": "redhat-operators-v422",
-      "jira": "",
+      "jira": "CNF-24557",
       "project": "Lifecycle Agent",
       "status": "PASS",
       "version": "4.22.1",
@@ -10950,7 +10950,7 @@
     {
       "name": "topology-aware-lifecycle-manager",
       "catalog": "redhat-operators-v422",
-      "jira": "",
+      "jira": "CNF-24549",
       "project": "Topology Aware Lifecycle Manager",
       "status": "ERROR",
       "version": "",

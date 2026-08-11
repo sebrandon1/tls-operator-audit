@@ -137,7 +137,7 @@ operators:
       - openshift-zero-trust-workload-identity-manager
 
   - name: ptp-operator
-    jira: ""
+    jira: CNF-22665
     project: PTP Operator
     catalog: redhat-operators-v422
     channel: stable
@@ -146,7 +146,7 @@ operators:
       - openshift-ptp
 
   - name: metallb-operator
-    jira: ""
+    jira: CNF-21983
     project: MetalLB Operator
     catalog: redhat-operators-v422
     channel: stable
@@ -155,7 +155,7 @@ operators:
       - metallb-system
 
   - name: sriov-network-operator
-    jira: ""
+    jira: CNF-21984
     project: SR-IOV Network Operator
     catalog: redhat-operators-v422
     channel: stable
@@ -164,7 +164,7 @@ operators:
       - openshift-sriov-network-operator
 
   - name: numaresources-operator
-    jira: ""
+    jira: CNF-25303
     project: NUMA Resources Operator
     catalog: redhat-operators-v422
     channel: stable
@@ -173,7 +173,7 @@ operators:
       - openshift-numaresources
 
   - name: lifecycle-agent
-    jira: ""
+    jira: CNF-24557
     project: Lifecycle Agent
     catalog: redhat-operators-v422
     channel: stable
@@ -182,7 +182,7 @@ operators:
       - openshift-lifecycle-agent
 
   - name: topology-aware-lifecycle-manager
-    jira: ""
+    jira: CNF-24549
     project: Topology Aware Lifecycle Manager
     catalog: redhat-operators-v422
     channel: stable
