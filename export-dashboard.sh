@@ -80,7 +80,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-require_cmd jq yq
+require_cmd jq yq bc
 
 OPERATORS_YAML="$SCRIPT_DIR/operators.yaml"
 if [[ ! -f "$OPERATORS_YAML" ]]; then
@@ -407,9 +407,11 @@ history_entry=$(jq -n \
         }
     } + (if $scan_settings != null then {scan_settings: $scan_settings} else {} end)')
 
-updated_history=$(echo "$existing_history" | jq --argjson entry "$history_entry" '. + [$entry]')
+# Deduplicate by scan_date+cluster, replacing any existing entry with the same key
+updated_history=$(echo "$existing_history" | jq --argjson entry "$history_entry" '
+    [.[] | select(.scan_date != $entry.scan_date or .cluster != $entry.cluster)] + [$entry]')
 echo "$updated_history" > "$history_file"
-log_success "Appended snapshot to $history_file"
+log_success "Wrote snapshot to $history_file"
 
 # ============================================================================
 # Generate shields.io badge JSON

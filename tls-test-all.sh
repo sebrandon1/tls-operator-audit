@@ -63,6 +63,16 @@ operator_count=$(yq '.operators | length' "$OPERATORS_FILE")
 RESULTS_BASE="$SCRIPT_DIR/results"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
+if [[ -n "$ONLY_OPERATOR" ]]; then
+    match=$(yq -r --arg name "$ONLY_OPERATOR" '.operators[] | select(.name == $name) | .name' "$OPERATORS_FILE")
+    if [[ -z "$match" ]]; then
+        log_error "Operator '$ONLY_OPERATOR' not found in $OPERATORS_FILE"
+        log_info "Available operators:"
+        yq -r '.operators[].name' "$OPERATORS_FILE" | sed 's/^/  /'
+        exit 1
+    fi
+fi
+
 CSV_CACHE=$(oc get csv -A -o json 2>/dev/null)
 OCP_VERSION=$(oc version -o json 2>/dev/null | jq -r '.openshiftVersion // "unknown"')
 TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
