@@ -1,7 +1,5 @@
 #!/bin/bash
 
-INSTALL_NAMESPACE="openshift-operators"
-
 is_operator_installed() {
     local name="$1"
     local csv_json="$2"
@@ -14,19 +12,51 @@ is_operator_installed() {
     [[ "$count" -gt 0 ]]
 }
 
+get_operator_version() {
+    local name="$1"
+    local csv_json="$2"
+    echo "$csv_json" | jq -r --arg name "$name" '
+        [.items[]
+        | select(.status.phase == "Succeeded")
+        | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))]
+        | .[0].spec.version // "unknown"'
+}
+
 install_operator() {
     local name="$1"
     local channel="$2"
     local source="$3"
+    local namespace="${4:-openshift-operators}"
 
-    log_info "Installing $name (channel: $channel, source: $source)..."
+    log_info "Installing $name (channel: $channel, source: $source, namespace: $namespace)..."
+
+    # Create namespace and OperatorGroup if installing outside openshift-operators
+    if [[ "$namespace" != "openshift-operators" ]]; then
+        oc create namespace "$namespace" --dry-run=client -o yaml 2>/dev/null | oc apply -f - >/dev/null 2>&1 || true
+
+        # Create OperatorGroup for OwnNamespace mode (only if one doesn't exist)
+        local existing_og
+        existing_og=$(oc get operatorgroup -n "$namespace" -o name 2>/dev/null | wc -l | tr -d ' ')
+        if [[ "$existing_og" -eq 0 ]]; then
+            oc apply -f - >/dev/null <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: ${name}-og
+  namespace: ${namespace}
+spec:
+  targetNamespaces:
+    - ${namespace}
+EOF
+        fi
+    fi
 
     oc apply -f - >/dev/null <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: ${name}
-  namespace: ${INSTALL_NAMESPACE}
+  namespace: ${namespace}
 spec:
   channel: ${channel}
   name: ${name}
@@ -35,12 +65,13 @@ spec:
   installPlanApproval: Automatic
 EOF
 
-    wait_for_csv "$name" 300
+    wait_for_csv "$name" "$namespace" 300
 }
 
 wait_for_csv() {
     local name="$1"
-    local timeout="${2:-300}"
+    local namespace="$2"
+    local timeout="${3:-300}"
     local elapsed=0
     local interval=10
 
@@ -48,14 +79,14 @@ wait_for_csv() {
 
     while [[ $elapsed -lt $timeout ]]; do
         local phase
-        phase=$(oc get csv -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null | jq -r --arg name "$name" '
+        phase=$(oc get csv -n "$namespace" -o json 2>/dev/null | jq -r --arg name "$name" '
             [.items[]
             | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))]
             | .[0].status.phase // "Pending"')
 
         if [[ "$phase" == "Succeeded" ]]; then
             log_success "CSV ready: $name"
-            wait_for_operator_pods "$name"
+            wait_for_operator_pods "$name" "$namespace"
             return 0
         fi
 
@@ -70,6 +101,7 @@ wait_for_csv() {
 
 wait_for_operator_pods() {
     local name="$1"
+    local namespace="$2"
     local timeout=120
     local elapsed=0
     local interval=10
@@ -78,7 +110,7 @@ wait_for_operator_pods() {
 
     while [[ $elapsed -lt $timeout ]]; do
         local pods_json
-        pods_json=$(oc get pods -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null || echo '{"items":[]}')
+        pods_json=$(oc get pods -n "$namespace" -o json 2>/dev/null || echo '{"items":[]}')
 
         local not_ready
         not_ready=$(echo "$pods_json" | jq -r --arg name "$name" '
@@ -108,20 +140,21 @@ wait_for_operator_pods() {
 
 uninstall_operator() {
     local name="$1"
+    local namespace="${2:-openshift-operators}"
 
     log_info "Uninstalling $name..."
 
-    oc delete subscription "$name" -n "${INSTALL_NAMESPACE}" --ignore-not-found=true 2>/dev/null || true
+    oc delete subscription "$name" -n "$namespace" --ignore-not-found=true 2>/dev/null || true
 
     local csvs
-    csvs=$(oc get csv -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null | jq -r --arg name "$name" '
+    csvs=$(oc get csv -n "$namespace" -o json 2>/dev/null | jq -r --arg name "$name" '
         .items[]
         | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))
         | .metadata.name')
 
     if [[ -n "$csvs" ]]; then
         echo "$csvs" | while read -r csv; do
-            oc delete csv "$csv" -n "${INSTALL_NAMESPACE}" 2>/dev/null || true
+            oc delete csv "$csv" -n "$namespace" 2>/dev/null || true
         done
     fi
 
@@ -130,7 +163,7 @@ uninstall_operator() {
     local elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
         local pod_count
-        pod_count=$(oc get pods -n "${INSTALL_NAMESPACE}" -o json 2>/dev/null | jq -r --arg name "$name" '
+        pod_count=$(oc get pods -n "$namespace" -o json 2>/dev/null | jq -r --arg name "$name" '
             [.items[]
             | select(.metadata.name | ascii_downcase | contains($name | ascii_downcase))]
             | length')

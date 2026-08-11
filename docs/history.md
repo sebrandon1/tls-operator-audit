@@ -15,6 +15,7 @@ title: "Scan History"
       <th class="sortable">Scan Date</th>
       <th class="sortable">Cluster</th>
       <th class="sortable">OCP Version</th>
+      <th class="sortable">TCO Version</th>
       <th class="sortable" data-type="number">Operators</th>
       <th class="sortable" data-type="number">Pass</th>
       <th class="sortable" data-type="number">Partial</th>
@@ -31,6 +32,7 @@ title: "Scan History"
       <td>{{ scan.scan_date | date: "%Y-%m-%d %H:%M" }}</td>
       <td>{{ scan.cluster }}</td>
       <td>{{ scan.ocp_version }}</td>
+      <td>{% if scan.tco_version and scan.tco_version != "" %}{{ scan.tco_version }}{% else %}&mdash;{% endif %}</td>
       <td>{{ scan.summary.total_operators }}</td>
       <td>{{ scan.summary.pass }}</td>
       <td>{{ scan.summary.partial }}</td>

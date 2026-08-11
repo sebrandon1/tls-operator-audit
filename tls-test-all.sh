@@ -64,6 +64,11 @@ RESULTS_BASE="$SCRIPT_DIR/results"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 CSV_CACHE=$(oc get csv -A -o json 2>/dev/null)
+OCP_VERSION=$(oc version -o json 2>/dev/null | jq -r '.openshiftVersion // "unknown"')
+TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
+
+log_info "OCP version: $OCP_VERSION"
+log_info "tls-compliance-operator: $TCO_VERSION"
 
 # Collect summary data for final table
 declare -a SUMMARY_NAMES=()
@@ -71,6 +76,7 @@ declare -a SUMMARY_STATUS=()
 declare -a SUMMARY_TOTAL=()
 declare -a SUMMARY_MLKEM=()
 declare -a SUMMARY_DETAIL=()
+declare -a SUMMARY_VERSIONS=()
 
 collect_endpoint_data() {
     local op_name="$1"
@@ -141,6 +147,7 @@ for i in $(seq 0 $((operator_count - 1))); do
     op_project=$(yq -r ".operators[$i].project" "$OPERATORS_FILE")
     op_catalog=$(yq -r ".operators[$i].catalog" "$OPERATORS_FILE")
     op_channel=$(yq -r ".operators[$i].channel" "$OPERATORS_FILE")
+    op_install_ns=$(yq -r ".operators[$i].install_namespace // \"openshift-operators\"" "$OPERATORS_FILE")
 
     if [[ -n "$ONLY_OPERATOR" && "$op_name" != "$ONLY_OPERATOR" ]]; then
         continue
@@ -155,7 +162,11 @@ for i in $(seq 0 $((operator_count - 1))); do
 
     # Check if already installed
     if is_operator_installed "$op_name" "$CSV_CACHE"; then
-        log_info "Already installed, scanning in-place..."
+        op_version=$(get_operator_version "$op_name" "$CSV_CACHE")
+        SUMMARY_VERSIONS+=("$op_version")
+        log_info "Already installed (v$op_version), scanning in-place..."
+        jq -n --arg version "$op_version" --arg tco "$TCO_VERSION" --arg ocp "$OCP_VERSION" \
+            '{operator_version: $version, tco_version: $tco, ocp_version: $ocp}' > "$results_dir/metadata.json"
         collect_endpoint_data "$op_name" "$i" "$results_dir"
         continue
     fi
@@ -167,18 +178,27 @@ for i in $(seq 0 $((operator_count - 1))); do
         SUMMARY_MLKEM+=("-")
         SUMMARY_STATUS+=("N/A")
         SUMMARY_DETAIL+=("")
+        SUMMARY_VERSIONS+=("N/A")
         continue
     fi
 
     # Install → scan → teardown
-    if ! install_operator "$op_name" "$op_channel" "$op_catalog"; then
+    if ! install_operator "$op_name" "$op_channel" "$op_catalog" "$op_install_ns"; then
         log_error "Failed to install $op_name"
         SUMMARY_TOTAL+=("0")
         SUMMARY_MLKEM+=("0")
         SUMMARY_STATUS+=("ERROR")
         SUMMARY_DETAIL+=("")
+        SUMMARY_VERSIONS+=("ERROR")
         continue
     fi
+
+    # Re-fetch CSVs after install to get the new operator's version
+    fresh_csv=$(oc get csv -A -o json 2>/dev/null)
+    op_version=$(get_operator_version "$op_name" "$fresh_csv")
+    SUMMARY_VERSIONS+=("$op_version")
+    jq -n --arg version "$op_version" --arg tco "$TCO_VERSION" --arg ocp "$OCP_VERSION" \
+        '{operator_version: $version, tco_version: $tco, ocp_version: $ocp}' > "$results_dir/metadata.json"
 
     log_info "Waiting ${SCAN_WAIT}s for tls-compliance-operator to discover endpoints..."
     sleep "$SCAN_WAIT"
@@ -186,7 +206,7 @@ for i in $(seq 0 $((operator_count - 1))); do
     collect_endpoint_data "$op_name" "$i" "$results_dir"
 
     if [[ "$SKIP_TEARDOWN" == "false" ]]; then
-        uninstall_operator "$op_name"
+        uninstall_operator "$op_name" "$op_install_ns"
         ns_count_cleanup=$(yq ".operators[$i].namespaces | length" "$OPERATORS_FILE")
         for j in $(seq 0 $((ns_count_cleanup - 1))); do
             cleanup_stale_reports "$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")"
@@ -200,11 +220,12 @@ echo ""
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BOLD}  ML-KEM COMPLIANCE SUMMARY${NC}"
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-printf "  %-40s %8s %8s %8s\n" "OPERATOR" "TOTAL" "ML-KEM" "STATUS"
-printf "  %-40s %8s %8s %8s\n" "--------" "-----" "------" "------"
+printf "  %-40s %-12s %8s %8s %8s\n" "OPERATOR" "VERSION" "TOTAL" "ML-KEM" "STATUS"
+printf "  %-40s %-12s %8s %8s %8s\n" "--------" "-------" "-----" "------" "------"
 
 for idx in "${!SUMMARY_NAMES[@]}"; do
     local_name="${SUMMARY_NAMES[$idx]}"
+    local_version="${SUMMARY_VERSIONS[$idx]}"
     local_total="${SUMMARY_TOTAL[$idx]}"
     local_mlkem="${SUMMARY_MLKEM[$idx]}"
     local_status="${SUMMARY_STATUS[$idx]}"
@@ -218,7 +239,7 @@ for idx in "${!SUMMARY_NAMES[@]}"; do
         ERROR)   color="$RED" ;;
     esac
 
-    printf "  ${color}%-40s %8s %8s %8s${NC}\n" "$local_name" "$local_total" "$local_mlkem" "$local_status"
+    printf "  ${color}%-40s %-12s %8s %8s %8s${NC}\n" "$local_name" "$local_version" "$local_total" "$local_mlkem" "$local_status"
 done
 
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
