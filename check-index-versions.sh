@@ -60,6 +60,25 @@ if [[ -f "$SCAN_RESULTS" ]]; then
     scanned_versions=$(jq '[.operators[] | {(.name): .version}] | add // {}' "$SCAN_RESULTS")
 fi
 
+# Build catalog name → image mapping from cluster
+catalog_images=$(oc get catalogsource -n openshift-marketplace -o json 2>/dev/null | jq '
+    [.items[] | {(.metadata.name): .spec.image}] | add // {}')
+
+# Map known Red Hat catalog images to their catalog.redhat.com URLs
+catalog_url_for() {
+    local image="$1"
+    case "$image" in
+        *redhat-operator-index*)
+            echo "https://catalog.redhat.com/en/software/containers/redhat/redhat-operator-index/5f0e4759dd19c7063a78b1f8" ;;
+        *certified-operator-index*)
+            echo "https://catalog.redhat.com/en/software/containers/redhat/certified-operator-index/5f0e47c7d19c7063a78b1f96" ;;
+        *community-operator-index*)
+            echo "https://catalog.redhat.com/en/software/containers/redhat/community-operator-index/5f0e481add19c7063a78b1fa" ;;
+        *)
+            echo "" ;;
+    esac
+}
+
 entries="[]"
 updates_available=0
 
@@ -82,12 +101,16 @@ for i in $(seq 0 $((operator_count - 1))); do
             --arg name "$op_name" \
             --arg catalog "pre-installed" \
             --arg channel "" \
+            --arg catalog_image "" \
+            --arg catalog_url "" \
             --arg index_version "$installed_version" \
             --arg scanned_version "$(echo "$scanned_versions" | jq -r --arg n "$op_name" '.[$n] // ""')" \
             '{
                 name: $name,
                 catalog: $catalog,
                 channel: $channel,
+                catalog_image: $catalog_image,
+                catalog_url: $catalog_url,
                 index_version: $index_version,
                 scanned_version: $scanned_version,
                 update_available: ($index_version != $scanned_version and $index_version != "" and $scanned_version != "")
@@ -102,14 +125,20 @@ for i in $(seq 0 $((operator_count - 1))); do
 
     if [[ "$pm_json" == "{}" ]]; then
         log_warn "$op_name not found in any catalog"
+        catalog_image=$(echo "$catalog_images" | jq -r --arg c "$op_catalog" '.[$c] // ""')
+        catalog_url=$(catalog_url_for "$catalog_image")
         entry=$(jq -n \
             --arg name "$op_name" \
             --arg catalog "$op_catalog" \
             --arg channel "$op_channel" \
+            --arg catalog_image "$catalog_image" \
+            --arg catalog_url "$catalog_url" \
             '{
                 name: $name,
                 catalog: $catalog,
                 channel: $channel,
+                catalog_image: $catalog_image,
+                catalog_url: $catalog_url,
                 index_version: "",
                 scanned_version: "",
                 update_available: false,
@@ -141,10 +170,15 @@ for i in $(seq 0 $((operator_count - 1))); do
         version_changed="true"
     fi
 
+    catalog_image=$(echo "$catalog_images" | jq -r --arg c "$op_catalog" '.[$c] // ""')
+    catalog_url=$(catalog_url_for "$catalog_image")
+
     entry=$(jq -n \
         --arg name "$op_name" \
         --arg catalog "$op_catalog" \
         --arg channel "$op_channel" \
+        --arg catalog_image "$catalog_image" \
+        --arg catalog_url "$catalog_url" \
         --arg index_version "$index_version" \
         --arg scanned_version "$scanned_version" \
         --argjson update_available "$update_available" \
@@ -154,6 +188,8 @@ for i in $(seq 0 $((operator_count - 1))); do
             name: $name,
             catalog: $catalog,
             channel: $channel,
+            catalog_image: $catalog_image,
+            catalog_url: $catalog_url,
             index_version: $index_version,
             scanned_version: $scanned_version,
             update_available: $update_available

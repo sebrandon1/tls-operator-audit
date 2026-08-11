@@ -47,7 +47,13 @@ title: "Index Versions"
     {% for op in data.operators %}
     <tr>
       <td><a href="{{ '/operators/' | append: op.name | relative_url }}">{{ op.name }}</a></td>
-      <td>{{ op.catalog }}</td>
+      <td>
+        {% if op.catalog_url and op.catalog_url != "" %}
+          <a href="{{ op.catalog_url }}" target="_blank" rel="noopener">{{ op.catalog }}</a>
+        {% else %}
+          {{ op.catalog }}
+        {% endif %}
+      </td>
       <td>{{ op.channel | default: "&mdash;" }}</td>
       <td>{{ op.index_version | default: "&mdash;" }}</td>
       <td>{{ op.scanned_version | default: "&mdash;" }}</td>
