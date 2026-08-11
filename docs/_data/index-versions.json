@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-11T18:26:58Z",
+  "checked": "2026-08-11T18:37:49Z",
   "operators": [
     {
       "name": "cert-manager-operator",
@@ -57,7 +57,7 @@
       "channel": "stable-2",
       "catalog_image": "registry.redhat.io/redhat/redhat-operator-index:v5.0",
       "catalog_url": "https://catalog.redhat.com/en/software/containers/redhat/redhat-operator-index/5f0e4759dd19c7063a78b1f8",
-      "index_version": "",
+      "index_version": "2.2.1-rh-1",
       "scanned_version": "2.2.1-rh-1",
       "update_available": false
     },
