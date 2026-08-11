@@ -17,6 +17,8 @@ Optional:
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
 
+  --tco-version <ver>    tls-compliance-operator version used for scan
+
 Scan settings (recorded in history for provenance):
   --scan-mode <mode>      How scan was run: all-operators | single-operator | operators-yaml
   --scan-operator <name>  Operator name (if single-operator mode)
@@ -37,6 +39,7 @@ EOF
 RESULTS_DIR="results"
 CLUSTER="unknown"
 OCP_VERSION="unknown"
+TCO_VERSION=""
 SCAN_MODE=""
 SCAN_OPERATOR=""
 SCAN_KUBECONFIG=""
@@ -52,6 +55,8 @@ while [[ $# -gt 0 ]]; do
             require_arg "$1" "${2:-}"; CLUSTER="$2"; shift 2 ;;
         --ocp-version)
             require_arg "$1" "${2:-}"; OCP_VERSION="$2"; shift 2 ;;
+        --tco-version)
+            require_arg "$1" "${2:-}"; TCO_VERSION="$2"; shift 2 ;;
         --scan-mode)
             require_arg "$1" "${2:-}"; SCAN_MODE="$2"; shift 2 ;;
         --scan-operator)
@@ -163,12 +168,14 @@ for i in $(seq 0 $((operator_count - 1))); do
             --arg jira "$op_jira" \
             --arg project "$op_project" \
             --arg status "ERROR" \
+            --arg version "" \
             '{
                 name: $name,
                 catalog: $catalog,
                 jira: $jira,
                 project: $project,
                 status: $status,
+                version: $version,
                 total_endpoints: 0,
                 reachable_endpoints: 0,
                 closed_endpoints: 0,
@@ -185,6 +192,13 @@ for i in $(seq 0 $((operator_count - 1))); do
     report_mtime=$(file_mtime_epoch "$latest_report")
     if [[ "$report_mtime" -gt "$latest_mtime" ]]; then
         latest_mtime=$report_mtime
+    fi
+
+    # Read operator version from metadata.json if present
+    report_dir=$(dirname "$latest_report")
+    op_version=""
+    if [[ -f "$report_dir/metadata.json" ]]; then
+        op_version=$(jq -r '.operator_version // ""' "$report_dir/metadata.json")
     fi
 
     # Extract endpoint data using jq
@@ -247,6 +261,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         --arg jira "$op_jira" \
         --arg project "$op_project" \
         --arg status "$op_status" \
+        --arg version "$op_version" \
         --argjson total_endpoints "$total_ep" \
         --argjson reachable_endpoints "$reachable_ep" \
         --argjson closed_endpoints "$closed_ep" \
@@ -259,6 +274,7 @@ for i in $(seq 0 $((operator_count - 1))); do
             jira: $jira,
             project: $project,
             status: $status,
+            version: $version,
             total_endpoints: $total_endpoints,
             reachable_endpoints: $reachable_endpoints,
             closed_endpoints: $closed_endpoints,
@@ -299,6 +315,7 @@ scan_results=$(jq -n \
     --arg scan_date "$scan_date" \
     --arg cluster "$CLUSTER" \
     --arg ocp_version "$OCP_VERSION" \
+    --arg tco_version "$TCO_VERSION" \
     --argjson total_operators "$total_operators" \
     --argjson pass "$summary_pass" \
     --argjson partial "$summary_partial" \
@@ -312,6 +329,7 @@ scan_results=$(jq -n \
         scan_date: $scan_date,
         cluster: $cluster,
         ocp_version: $ocp_version,
+        tco_version: $tco_version,
         summary: {
             total_operators: $total_operators,
             pass: $pass,
@@ -362,6 +380,7 @@ history_entry=$(jq -n \
     --arg scan_date "$scan_date" \
     --arg cluster "$CLUSTER" \
     --arg ocp_version "$OCP_VERSION" \
+    --arg tco_version "$TCO_VERSION" \
     --argjson total_operators "$total_operators" \
     --argjson pass "$summary_pass" \
     --argjson partial "$summary_partial" \
@@ -375,6 +394,7 @@ history_entry=$(jq -n \
         scan_date: $scan_date,
         cluster: $cluster,
         ocp_version: $ocp_version,
+        tco_version: $tco_version,
         summary: {
             total_operators: $total_operators,
             pass: $pass,

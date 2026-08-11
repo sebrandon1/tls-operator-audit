@@ -23,6 +23,7 @@ layout: default
   </div>
   <div class="operator-meta">
     <span><strong>Project:</strong> {{ op.project }}</span>
+    {% if op.version and op.version != "" %}<span><strong>Version:</strong> {{ op.version }}</span>{% endif %}
     <span><strong>Jira:</strong> <a href="https://redhat.atlassian.net/browse/{{ op.jira }}" target="_blank" rel="noopener">{{ op.jira }}</a></span>
     <span><strong>Catalog:</strong> {{ op.catalog }}</span>
   </div>

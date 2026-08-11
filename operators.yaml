@@ -4,6 +4,8 @@
 # catalog/channel: used by tls-test-all.sh to install via OLM
 # catalog: null means not available in any catalog on the cluster
 # v5.0 operators use "redhat-operators", v4.18 fallbacks use "redhat-operators-v422"
+# install_namespace: namespace to install into (default: openshift-operators)
+#   Operators that only support OwnNamespace install mode need their own namespace.
 
 operators:
   - name: cert-manager-operator
@@ -92,8 +94,8 @@ operators:
     project: OpenShift Sandboxed Containers
     catalog: redhat-operators-v422
     channel: stable
+    install_namespace: openshift-sandboxed-containers-operator
     namespaces:
-      - openshift-operators
       - openshift-sandboxed-containers-operator
 
   - name: trustee-operator
@@ -101,8 +103,8 @@ operators:
     project: Trustee (Confidential Computing)
     catalog: redhat-operators-v422
     channel: stable
+    install_namespace: trustee-operator-system
     namespaces:
-      - openshift-operators
       - trustee-operator-system
 
   - name: openshift-gitops-operator
@@ -133,3 +135,57 @@ operators:
     namespaces:
       - openshift-operators
       - openshift-zero-trust-workload-identity-manager
+
+  - name: ptp-operator
+    jira: ""
+    project: PTP Operator
+    catalog: redhat-operators-v422
+    channel: stable
+    install_namespace: openshift-ptp
+    namespaces:
+      - openshift-ptp
+
+  - name: metallb-operator
+    jira: ""
+    project: MetalLB Operator
+    catalog: redhat-operators-v422
+    channel: stable
+    namespaces:
+      - openshift-operators
+      - metallb-system
+
+  - name: sriov-network-operator
+    jira: ""
+    project: SR-IOV Network Operator
+    catalog: redhat-operators-v422
+    channel: stable
+    install_namespace: openshift-sriov-network-operator
+    namespaces:
+      - openshift-sriov-network-operator
+
+  - name: numaresources-operator
+    jira: ""
+    project: NUMA Resources Operator
+    catalog: redhat-operators-v422
+    channel: stable
+    namespaces:
+      - openshift-operators
+      - openshift-numaresources
+
+  - name: lifecycle-agent
+    jira: ""
+    project: Lifecycle Agent
+    catalog: redhat-operators-v422
+    channel: stable
+    install_namespace: openshift-lifecycle-agent
+    namespaces:
+      - openshift-lifecycle-agent
+
+  - name: topology-aware-lifecycle-manager
+    jira: ""
+    project: Topology Aware Lifecycle Manager
+    catalog: redhat-operators-v422
+    channel: stable
+    namespaces:
+      - openshift-operators
+      - openshift-topology-aware-lifecycle-manager

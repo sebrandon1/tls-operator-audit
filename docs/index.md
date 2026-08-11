@@ -52,6 +52,7 @@ title: "Dashboard"
   <thead>
     <tr>
       <th class="sortable">Operator</th>
+      <th class="sortable">Version</th>
       <th class="sortable">Jira</th>
       <th class="sortable">Catalog</th>
       <th class="sortable" data-type="number">Endpoints</th>
@@ -63,6 +64,7 @@ title: "Dashboard"
     {% for op in data.operators %}
     <tr data-status="{{ op.status | downcase }}">
       <td><a href="{{ '/operators/' | append: op.name | relative_url }}">{{ op.name }}</a></td>
+      <td>{% if op.version and op.version != "" %}{{ op.version }}{% else %}&mdash;{% endif %}</td>
       <td><a href="https://redhat.atlassian.net/browse/{{ op.jira }}" target="_blank" rel="noopener">{{ op.jira }}</a></td>
       <td>{{ op.catalog }}</td>
       <td data-sort="{{ op.reachable_endpoints }}">
