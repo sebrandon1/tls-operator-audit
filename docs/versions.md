@@ -36,7 +36,8 @@ title: "Index Versions"
   <thead>
     <tr>
       <th class="sortable">Operator</th>
-      <th class="sortable">Catalog</th>
+      <th class="sortable">Index</th>
+      <th class="sortable">Tag</th>
       <th class="sortable">Channel</th>
       <th class="sortable">Index Version</th>
       <th class="sortable">Scanned Version</th>
@@ -47,13 +48,22 @@ title: "Index Versions"
     {% for op in data.operators %}
     <tr>
       <td><a href="{{ '/operators/' | append: op.name | relative_url }}">{{ op.name }}</a></td>
-      <td>
-        {% if op.catalog_url and op.catalog_url != "" %}
-          <a href="{{ op.catalog_url }}" target="_blank" rel="noopener">{{ op.catalog }}</a>
-        {% else %}
-          {{ op.catalog }}
-        {% endif %}
-      </td>
+      {% if op.catalog_image and op.catalog_image != "" %}
+        {% assign image_with_tag = op.catalog_image | split: "/" | last %}
+        {% assign index_name = image_with_tag | split: ":" | first %}
+        {% assign index_tag = image_with_tag | split: ":" | last %}
+        <td>
+          {% if op.catalog_url and op.catalog_url != "" %}
+            <a href="{{ op.catalog_url }}" target="_blank" rel="noopener">{{ index_name }}</a>
+          {% else %}
+            {{ index_name }}
+          {% endif %}
+        </td>
+        <td>{{ index_tag }}</td>
+      {% else %}
+        <td>{{ op.catalog }}</td>
+        <td>&mdash;</td>
+      {% endif %}
       <td>{{ op.channel | default: "&mdash;" }}</td>
       <td>{{ op.index_version | default: "&mdash;" }}</td>
       <td>{{ op.scanned_version | default: "&mdash;" }}</td>
