@@ -31,7 +31,7 @@
     },
     "scan_settings": {
       "mode": "all-operators",
-      "kubeconfig": "~/Downloads/cnfdt16-kubeconfig"
+      "kubeconfig": "/Users/bpalm/Downloads/cnfdt16-kubeconfig"
     }
   }
 ]

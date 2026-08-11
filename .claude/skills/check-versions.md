@@ -6,11 +6,7 @@ allowed-tools: [Bash, Read]
 
 # Check Index Versions
 
-Quick check of catalog indexes for new operator versions. Compares index versions against last-scanned versions and updates the tracker JSON.
-
-## Prerequisites
-
-Determine the kubeconfig path. Check `$KUBECONFIG`, then `~/Downloads/*kubeconfig*`, then ask.
+Quick check of catalog indexes for new operator versions.
 
 ## Run
 
@@ -18,18 +14,13 @@ Determine the kubeconfig path. Check `$KUBECONFIG`, then `~/Downloads/*kubeconfi
 bash check-index-versions.sh --kubeconfig <path> --verbose
 ```
 
+Determine kubeconfig from `$KUBECONFIG`, `~/Downloads/*kubeconfig*`, or ask.
+
 ## After
 
-If any operators show "UPDATE AVAILABLE":
-1. List which operators have updates and the version delta
-2. Suggest running `/scan-operators` to re-scan with the new versions
-
-Commit and push the updated tracker if versions changed:
-
+If versions changed, commit and push:
 ```bash
-git add docs/_data/index-versions.json
-git commit -m "Update index versions: <summary of changes>"
-git push
+git add docs/_data/index-versions.json && git commit -m "Update index versions" && git push
 ```
 
-If no changes, report that all operators are at the latest index versions and skip the commit.
+If operators show "UPDATE AVAILABLE", suggest running `/scan-operators` to re-scan.
