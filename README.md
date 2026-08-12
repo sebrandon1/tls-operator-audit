@@ -63,6 +63,36 @@ Reads the `results/` directory and generates the JSON data files, badge, and ope
 ./export-dashboard.sh --cluster cnfdt16 --ocp-version 5.0
 ```
 
+## Operator Configuration
+
+Target operators are defined in `operators.yaml`. Each operator entry supports:
+
+- `name`: Operator name (used to match CSV and subscription)
+- `catalog`: OLM catalog source (e.g., `redhat-operators`)
+- `channel`: OLM subscription channel
+- `namespaces`: List of namespaces to scan for TLS endpoints
+- `install_namespace`: (Optional) Namespace to install into for OwnNamespace mode operators
+
+### OperatorGroup-Scoped Installations
+
+Some operators require **OwnNamespace** install mode and cannot be installed in the default `openshift-operators` namespace. For these operators, specify `install_namespace` to:
+
+1. Create a dedicated namespace
+2. Create an OperatorGroup with `targetNamespaces: [namespace]`
+3. Install the subscription in that namespace
+
+Example:
+```yaml
+- name: sandboxed-containers-operator
+  catalog: redhat-operators
+  channel: stable
+  install_namespace: openshift-sandboxed-containers-operator
+  namespaces:
+    - openshift-sandboxed-containers-operator
+```
+
+This is handled automatically by `tls-test-all.sh` during installation.
+
 ## Output
 
 Results are saved to `results/<operator-name>/<timestamp>/`:

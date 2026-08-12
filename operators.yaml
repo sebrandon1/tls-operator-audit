@@ -1,11 +1,27 @@
 # Target operators for PQC ML-KEM TLS compliance testing
 # Tracked via OCPSTRAT-3303 / OCPSTRAT-3491
 #
-# catalog/channel: used by tls-test-all.sh to install via OLM
-# catalog: null means not available in any catalog on the cluster
-# v5.0 operators use "redhat-operators", v4.18 fallbacks use "redhat-operators-v422"
-# install_namespace: namespace to install into (default: openshift-operators)
-#   Operators that only support OwnNamespace install mode need their own namespace.
+# Field reference:
+# - name: Operator name (used to match CSV and subscription)
+# - jira: Tracking issue in Jira
+# - project: Display name for the operator
+# - catalog: OLM catalog source (null = not available in any catalog)
+# - channel: OLM subscription channel
+# - namespaces: List of namespaces to scan for endpoints
+# - install_namespace: Namespace to install into (optional, default: openshift-operators)
+#
+# OperatorGroup-scoped installations:
+# Some operators require OwnNamespace install mode and cannot be installed in
+# openshift-operators. For these operators, specify install_namespace to:
+#   1. Create a dedicated namespace
+#   2. Create an OperatorGroup with targetNamespaces: [namespace]
+#   3. Install the subscription in that namespace
+#
+# Example:
+#   - name: sandboxed-containers-operator
+#     install_namespace: openshift-sandboxed-containers-operator
+#     namespaces:
+#       - openshift-sandboxed-containers-operator
 
 operators:
   - name: cert-manager-operator
