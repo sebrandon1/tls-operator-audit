@@ -232,19 +232,22 @@ for i in $(seq 0 $((operator_count - 1))); do
     mlkem_ep=$(echo "$endpoints_json" | jq '[.[] | select(.compliance_status != "Closed" and .compliance_status != "Timeout") | select(.mlkem_supported == true)] | length')
 
     # Determine status
-    if [[ "$reachable_ep" -eq 0 ]]; then
-        op_status="NONE"
-        summary_none=$((summary_none + 1))
-    elif [[ "$mlkem_ep" -eq "$reachable_ep" ]]; then
-        op_status="PASS"
-        summary_pass=$((summary_pass + 1))
-    elif [[ "$mlkem_ep" -gt 0 ]]; then
-        op_status="PARTIAL"
-        summary_partial=$((summary_partial + 1))
-    else
-        op_status="FAIL"
-        summary_error=$((summary_error + 1))
-    fi
+    op_status=$(determine_status "$reachable_ep" "$mlkem_ep")
+
+    case "$op_status" in
+        PASS)
+            summary_pass=$((summary_pass + 1))
+            ;;
+        PARTIAL)
+            summary_partial=$((summary_partial + 1))
+            ;;
+        NONE)
+            summary_none=$((summary_none + 1))
+            ;;
+        FAIL)
+            summary_error=$((summary_error + 1))
+            ;;
+    esac
 
     if [[ "$reachable_ep" -gt 0 ]]; then
         mlkem_pct=$(echo "scale=1; $mlkem_ep * 100 / $reachable_ep" | bc)

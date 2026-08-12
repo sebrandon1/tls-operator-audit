@@ -17,6 +17,19 @@ jobs:
       - name: Run ShellCheck
         run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck --severity=warning
 
+  validate-yaml:
+    name: Validate operators.yaml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yq
+        uses: mikefarah/yq@v4
+
+      - name: Validate operators.yaml
+        run: yq eval 'has("operators") and (.operators | length > 0)' operators.yaml
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
