@@ -57,10 +57,33 @@
               <p><strong>{{ version[0] }}:</strong></p>
               <ul>
                 {% for suite in version[1] %}
-                <li><code>{{ suite }}</code></li>
+                <li>
+                  <code>{{ suite }}</code>
+                  {% if suite contains '_CBC_' %}
+                    <span class="badge badge-grade-b cipher-tag" data-tooltip="CBC mode — vulnerable to padding oracle attacks">CBC</span>
+                  {% elsif suite contains '_GCM_' %}
+                    <span class="badge badge-grade-a cipher-tag" data-tooltip="GCM mode — authenticated encryption">GCM</span>
+                  {% elsif suite contains 'CHACHA20_POLY1305' %}
+                    <span class="badge badge-grade-a cipher-tag" data-tooltip="ChaCha20-Poly1305 — authenticated encryption">AEAD</span>
+                  {% elsif suite contains '_CCM' %}
+                    <span class="badge badge-grade-a cipher-tag" data-tooltip="CCM mode — authenticated encryption">AEAD</span>
+                  {% endif %}
+                </li>
                 {% endfor %}
               </ul>
               {% endfor %}
+
+              {% if ep.overall_cipher_grade and ep.overall_cipher_grade != "" %}
+              <div class="grade-explanation">
+                {% if ep.overall_cipher_grade == "A" %}
+                  <span class="badge badge-grade-a">Grade A</span> All cipher suites use authenticated encryption (AEAD)
+                {% elsif ep.overall_cipher_grade == "B" %}
+                  <span class="badge badge-grade-b">Grade B</span> One or more cipher suites use CBC mode, which is vulnerable to padding oracle attacks
+                {% else %}
+                  <span class="badge badge-grade-c">Grade {{ ep.overall_cipher_grade }}</span> Weak or insecure cipher suites detected
+                {% endif %}
+              </div>
+              {% endif %}
             </div>
             {% if ep.certificate_info %}
             <div class="detail-section">
