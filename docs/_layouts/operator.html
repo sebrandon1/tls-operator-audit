@@ -20,6 +20,12 @@ window.scanData = {{ site.data.scan-results | jsonify }};
   <a href="{{ '/' | relative_url }}">Dashboard</a> &rsaquo; {{ op.name }}
 </nav>
 
+{% include scan-info.html
+   scan_date=site.data.scan-results.scan_date
+   cluster=site.data.scan-results.cluster
+   ocp_version=site.data.scan-results.ocp_version
+   tco_version=site.data.scan-results.tco_version %}
+
 <div class="operator-header">
   <div class="operator-title">
     <h1>{{ op.name }}</h1>
