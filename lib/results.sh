@@ -11,6 +11,7 @@ generate_reports() {
 
     generate_markdown "$json_file" "${results_dir}/report.md"
     generate_junit "$json_file" "${results_dir}/report.xml"
+    generate_html "$json_file" "${results_dir}/report.html"
 }
 
 generate_markdown() {
@@ -106,6 +107,268 @@ XMLEOF
 
     if [[ -s "$xml_file" ]]; then
         log_success "JUnit report: ${xml_file}"
+    fi
+}
+
+generate_html() {
+    local json_file="$1"
+    local html_file="$2"
+
+    log_info "Generating HTML report..."
+
+    cat > "$html_file" << 'HTML_HEADER'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLS Compliance Audit Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            color: #2d3748;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .timestamp { opacity: 0.9; font-size: 0.9rem; }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            background: #f7fafc;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            color: #718096;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .stat-value.success { color: #38a169; }
+        .stat-value.warning { color: #d69e2e; }
+        .stat-value.danger { color: #e53e3e; }
+        .stat-value.info { color: #3182ce; }
+        .content { padding: 2rem; }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover { background: #f7fafc; }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        .badge-success { background: #c6f6d5; color: #22543d; }
+        .badge-warning { background: #fef5e7; color: #744210; }
+        .badge-danger { background: #fed7d7; color: #742a2a; }
+        .badge-info { background: #bee3f8; color: #2c5282; }
+        .badge-gray { background: #e2e8f0; color: #4a5568; }
+        .mlkem-true { color: #38a169; font-weight: 600; }
+        .mlkem-false { color: #e53e3e; }
+        .grade-a { background: #c6f6d5; color: #22543d; font-weight: 600; }
+        .grade-b { background: #fef5e7; color: #744210; font-weight: 600; }
+        .grade-c, .grade-d, .grade-f { background: #fed7d7; color: #742a2a; font-weight: 600; }
+        .expiry-warning {
+            background: #fef5e7;
+            border-left: 4px solid #d69e2e;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+        .expiry-critical {
+            background: #fed7d7;
+            border-left: 4px solid #e53e3e;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+        .expiry-warning h3, .expiry-critical h3 {
+            margin-bottom: 1rem;
+            font-size: 1.125rem;
+        }
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f7fafc;
+            color: #718096;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 TLS Compliance Audit Report</h1>
+            <div class="timestamp">Generated: <script>document.write(new Date().toLocaleString())</script></div>
+        </header>
+HTML_HEADER
+
+    jq -r --arg warning "${CERT_EXPIRY_WARNING_DAYS:-30}" --arg critical "${CERT_EXPIRY_CRITICAL_DAYS:-7}" '
+        def items: if type == "object" and has("items") then .items else . end;
+
+        items as $all_items |
+        ($warning | tonumber) as $warn_days |
+        ($critical | tonumber) as $crit_days |
+
+        ($all_items | length) as $total |
+        ([$all_items[] | select(.status.complianceStatus == "Compliant")] | length) as $compliant |
+        ([$all_items[] | select(.status.mlkemSupported == true)] | length) as $mlkem |
+        ([$all_items[] | select(.status.daysUntilExpiry != null and .status.daysUntilExpiry > 0 and .status.daysUntilExpiry <= $warn_days)] | sort_by(.status.daysUntilExpiry)) as $expiring |
+        ([$expiring[] | select(.status.daysUntilExpiry <= $crit_days)]) as $expiring_critical |
+
+        "        <div class=\"summary\">",
+        "            <div class=\"stat-card\">",
+        "                <div class=\"stat-value info\">\($total)</div>",
+        "                <div class=\"stat-label\">Total Endpoints</div>",
+        "            </div>",
+        "            <div class=\"stat-card\">",
+        "                <div class=\"stat-value success\">\($compliant)</div>",
+        "                <div class=\"stat-label\">Compliant</div>",
+        "            </div>",
+        "            <div class=\"stat-card\">",
+        "                <div class=\"stat-value \(if $mlkem > 0 then "success" else "warning" end)\">\($mlkem)</div>",
+        "                <div class=\"stat-label\">ML-KEM Support</div>",
+        "            </div>",
+        "            <div class=\"stat-card\">",
+        "                <div class=\"stat-value \(if ($expiring | length) > 0 then "danger" else "success" end)\">\($expiring | length)</div>",
+        "                <div class=\"stat-label\">Expiring Certs</div>",
+        "            </div>",
+        "        </div>",
+
+        (if ($expiring_critical | length) > 0 then
+            "        <div class=\"content\">",
+            "            <div class=\"expiry-critical\">",
+            "                <h3>🔴 Critical: Certificates Expiring Within \($crit_days) Days</h3>",
+            "                <ul>",
+            ($expiring_critical[] | "                    <li><strong>\(.spec.host):\(.spec.port)</strong> - Expires in <strong>\(.status.daysUntilExpiry) days</strong></li>"),
+            "                </ul>",
+            "            </div>"
+        elif ($expiring | length) > 0 then
+            "        <div class=\"content\">",
+            "            <div class=\"expiry-warning\">",
+            "                <h3>⚠️ Certificates Expiring Within \($warn_days) Days</h3>",
+            "                <ul>",
+            ($expiring[] | "                    <li><strong>\(.spec.host):\(.spec.port)</strong> - Expires in <strong>\(.status.daysUntilExpiry) days</strong></li>"),
+            "                </ul>",
+            "            </div>"
+        else
+            "        <div class=\"content\">"
+        end),
+
+        "            <h2>Endpoint Details</h2>",
+        "            <table>",
+        "                <thead>",
+        "                    <tr>",
+        "                        <th>Host</th>",
+        "                        <th>Port</th>",
+        "                        <th>Namespace</th>",
+        "                        <th>Status</th>",
+        "                        <th>TLS 1.2</th>",
+        "                        <th>TLS 1.3</th>",
+        "                        <th>Grade</th>",
+        "                        <th>ML-KEM</th>",
+        "                        <th>PQC Ready</th>",
+        "                    </tr>",
+        "                </thead>",
+        "                <tbody>",
+        ($all_items[] |
+            "                    <tr>",
+            "                        <td>\(.spec.host // "unknown")</td>",
+            "                        <td>\(.spec.port // "-")</td>",
+            "                        <td>\(.spec.sourceNamespace // "unknown")</td>",
+            "                        <td><span class=\"badge badge-\(
+                if .status.complianceStatus == "Compliant" then "success"
+                elif .status.complianceStatus == "Closed" or .status.complianceStatus == "Timeout" then "warning"
+                elif .status.complianceStatus == "NonCompliant" or .status.complianceStatus == "NoTLS" then "danger"
+                else "gray" end
+            )\">\(.status.complianceStatus // "Unknown")</span></td>",
+            "                        <td>\(if .status.tlsVersions.tls12 then "✓" else "✗" end)</td>",
+            "                        <td>\(if .status.tlsVersions.tls13 then "✓" else "✗" end)</td>",
+            "                        <td><span class=\"badge grade-\(.status.overallCipherGrade // "gray" | ascii_downcase)\">\(.status.overallCipherGrade // "-")</span></td>",
+            "                        <td class=\"mlkem-\(.status.mlkemSupported // false)\">\(if .status.mlkemSupported then "✓ Yes" else "✗ No" end)</td>",
+            "                        <td>\(.status.pqcReadiness // "Unknown")</td>",
+            "                    </tr>"
+        ),
+        "                </tbody>",
+        "            </table>",
+        "        </div>",
+        "        <footer>",
+        "            Generated by tls-compliance-operator audit",
+        "        </footer>",
+        "    </div>",
+        "</body>",
+        "</html>"
+    ' "$json_file" >> "$html_file" 2>/dev/null || {
+        cat >> "$html_file" <<'HTML_ERROR'
+        <div class="content">
+            <div class="expiry-critical">
+                <h3>Error</h3>
+                <p>Failed to parse JSON report.</p>
+            </div>
+        </div>
+        <footer>Generated by tls-compliance-operator audit</footer>
+    </div>
+</body>
+</html>
+HTML_ERROR
+    }
+
+    if [[ -s "$html_file" ]]; then
+        log_success "HTML report: ${html_file}"
     fi
 }
 
