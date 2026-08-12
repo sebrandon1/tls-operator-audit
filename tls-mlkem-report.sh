@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 source "$SCRIPT_DIR/lib/discovery.sh"
+source "$SCRIPT_DIR/lib/results.sh"
 
 usage() {
     cat <<EOF
@@ -17,6 +18,7 @@ Options:
   --kubeconfig <path>     Path to kubeconfig (default: \$KUBECONFIG or ~/.kube/config)
   --operators <file>      Operators list file (default: operators.yaml)
   --all-namespaces        Report on all namespaces, not just listed operators
+  --output-dir <dir>      Results directory (default: results)
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -26,12 +28,14 @@ EOF
 KUBECONFIG_PATH=""
 OPERATORS_FILE="$SCRIPT_DIR/operators.yaml"
 ALL_NAMESPACES=false
+OUTPUT_DIR="$SCRIPT_DIR/results"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
         --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
         --all-namespaces) ALL_NAMESPACES=true; shift ;;
+        --output-dir)     require_arg "$1" "${2:-}"; OUTPUT_DIR="$2"; shift 2 ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
@@ -54,7 +58,23 @@ ALL_REPORTS=$(oc get tlscompliancereports -o json 2>/dev/null)
 report_count=$(echo "$ALL_REPORTS" | jq '.items | length')
 log_info "Found $report_count TLSComplianceReport CRs on cluster"
 
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+save_and_generate_reports() {
+    local scope="$1"
+    local json_data="$2"
+    local results_dir="$OUTPUT_DIR/$scope/$TIMESTAMP"
+
+    mkdir -p "$results_dir"
+    echo "$json_data" > "$results_dir/report.json"
+    generate_reports "$results_dir"
+    echo "$results_dir"
+}
+
 if [[ "$ALL_NAMESPACES" == "true" ]]; then
+    results_dir=$(save_and_generate_reports "all-namespaces" "$ALL_REPORTS")
+    log_success "Results saved to: $results_dir/"
+
     echo ""
     echo -e "${BOLD}ML-KEM COMPLIANCE REPORT (ALL NAMESPACES)${NC}"
     echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -138,15 +158,17 @@ for i in $(seq 0 $((operator_count - 1))); do
     # Collect stats across all namespaces for this operator
     ns_filter="${NS_FILTERS[$i]}"
 
-    stats=$(echo "$ALL_REPORTS" | jq "
-        [.items[] | select($ns_filter)]
-        | {
+    endpoints=$(echo "$ALL_REPORTS" | jq "[.items[] | select($ns_filter)]")
+
+    save_and_generate_reports "$op_name" "$endpoints" > /dev/null
+
+    stats=$(echo "$endpoints" | jq '{
             total: length,
-            compliant: ([.[] | select(.status.complianceStatus == \"Compliant\")] | length),
+            compliant: ([.[] | select(.status.complianceStatus == "Compliant")] | length),
             mlkem: ([.[] | select(.status.mlkemSupported == true)] | length),
-            pqc_ready: ([.[] | select(.status.pqcReadiness == \"PQCReady\")] | length),
-            closed: ([.[] | select(.status.complianceStatus == \"Closed\" or .status.complianceStatus == \"Timeout\")] | length)
-        }")
+            pqc_ready: ([.[] | select(.status.pqcReadiness == "PQCReady")] | length),
+            closed: ([.[] | select(.status.complianceStatus == "Closed" or .status.complianceStatus == "Timeout")] | length)
+        }')
 
     total=$(echo "$stats" | jq '.total')
     compliant=$(echo "$stats" | jq '.compliant')
@@ -223,6 +245,8 @@ done
 
 echo ""
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+log_success "Results saved to: $OUTPUT_DIR/"
 
 if [[ "$has_failure" == "true" ]]; then
     exit 1
