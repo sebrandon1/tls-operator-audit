@@ -354,4 +354,76 @@ test_verbose_overrides_env
 test_verbose_flag_parsing
 test_quiet_flag_parsing
 
+# ===========================================================================
+echo ""
+echo "=== Issue #33: determine_status function ==="
+# ===========================================================================
+
+test_status_none_no_endpoints() {
+    local output
+    output=$(bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        determine_status 0 0
+    ')
+    assert_eq "NONE when reachable=0" "NONE" "$output"
+}
+
+test_status_none_all_closed() {
+    local output
+    output=$(bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        determine_status 0 0
+    ')
+    assert_eq "NONE when all endpoints closed" "NONE" "$output"
+}
+
+test_status_pass_all_mlkem() {
+    local output
+    output=$(bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        determine_status 8 8
+    ')
+    assert_eq "PASS when mlkem == reachable" "PASS" "$output"
+}
+
+test_status_partial_some_mlkem() {
+    local output
+    output=$(bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        determine_status 8 5
+    ')
+    assert_eq "PARTIAL when 0 < mlkem < reachable" "PARTIAL" "$output"
+}
+
+test_status_fail_no_mlkem() {
+    local output
+    output=$(bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        determine_status 8 0
+    ')
+    assert_eq "FAIL when mlkem=0 and reachable>0" "FAIL" "$output"
+}
+
+test_status_pass_one_endpoint() {
+    local output
+    output=$(bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        determine_status 1 1
+    ')
+    assert_eq "PASS with single ML-KEM endpoint" "PASS" "$output"
+}
+
+test_status_none_no_endpoints
+test_status_none_all_closed
+test_status_pass_all_mlkem
+test_status_partial_some_mlkem
+test_status_fail_no_mlkem
+test_status_pass_one_endpoint
+
 print_test_summary

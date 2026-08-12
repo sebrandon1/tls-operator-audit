@@ -113,15 +113,7 @@ collect_endpoint_data() {
 
     local reachable=$((total - closed))
     local status
-    if [[ "$total" -eq 0 ]]; then
-        status="NONE"
-    elif [[ "$reachable" -gt 0 && "$mlkem" -eq "$reachable" ]]; then
-        status="PASS"
-    elif [[ "$mlkem" -gt 0 ]]; then
-        status="PARTIAL"
-    else
-        status="FAIL"
-    fi
+    status=$(determine_status "$reachable" "$mlkem")
 
     SUMMARY_TOTAL+=("$total")
     SUMMARY_MLKEM+=("$mlkem")

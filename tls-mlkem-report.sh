@@ -155,21 +155,24 @@ for i in $(seq 0 $((operator_count - 1))); do
     closed=$(echo "$stats" | jq '.closed')
 
     reachable=$((total - closed))
-    if [[ "$reachable" -gt 0 && "$mlkem" -eq "$reachable" ]]; then
-        status="PASS"
-        color="$GREEN"
-    elif [[ "$total" -eq 0 ]]; then
-        status="NONE"
-        color="$YELLOW"
-    elif [[ "$mlkem" -gt 0 ]]; then
-        status="PARTIAL"
-        color="$YELLOW"
-        has_failure=true
-    else
-        status="FAIL"
-        color="$RED"
-        has_failure=true
-    fi
+    status=$(determine_status "$reachable" "$mlkem")
+
+    case "$status" in
+        PASS)
+            color="$GREEN"
+            ;;
+        NONE)
+            color="$YELLOW"
+            ;;
+        PARTIAL)
+            color="$YELLOW"
+            has_failure=true
+            ;;
+        FAIL)
+            color="$RED"
+            has_failure=true
+            ;;
+    esac
 
     printf "${color}%-35s %-12s %6s %10s %8s %10s %7s${NC}\n" \
         "$op_name" "YES" "$total" "$compliant" "$mlkem" "$pqc" "$status"
