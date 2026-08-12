@@ -731,6 +731,23 @@ details summary:hover {
   color: var(--text-muted);
 }
 
+/* Operator history detail table */
+.detail-table thead th {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  background-color: var(--bg-card);
+}
+
+.detail-table tbody td {
+  padding: 0.4rem 0.6rem;
+}
+
 /* ===== Cert Warnings ===== */
 .cert-warning {
   padding: 0.25em 0.6em;

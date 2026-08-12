@@ -75,6 +75,43 @@ title: "Scan History"
         {% endif %}
       </td>
     </tr>
+    {% if scan.operators and scan.operators.size > 0 %}
+    <tr class="detail-row">
+      <td colspan="11">
+        <details>
+          <summary>Operator Details ({{ scan.operators.size }} operators)</summary>
+          <div class="endpoint-detail">
+            <div class="detail-section" style="grid-column: 1 / -1;">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Operator</th>
+                    <th>Status</th>
+                    <th>Version</th>
+                    <th>Reachable Endpoints</th>
+                    <th>ML-KEM Endpoints</th>
+                    <th>ML-KEM %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for op in scan.operators %}
+                  <tr>
+                    <td><strong>{{ op.name }}</strong></td>
+                    <td>{% include status-badge.html status=op.status %}</td>
+                    <td>{{ op.version | default: "&mdash;" }}</td>
+                    <td>{{ op.reachable_endpoints }}</td>
+                    <td>{{ op.mlkem_endpoints }}</td>
+                    <td>{{ op.mlkem_percent }}%</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+      </td>
+    </tr>
+    {% endif %}
     {% endfor %}
   </tbody>
 </table>
