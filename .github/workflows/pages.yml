@@ -21,6 +21,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate dashboard data
+        run: |
+          # Validate scan-results.json exists and is valid JSON with required schema
+          SCAN_RESULTS="docs/_data/scan-results.json"
+
+          if [[ ! -f "$SCAN_RESULTS" ]]; then
+            echo "Error: $SCAN_RESULTS not found"
+            exit 1
+          fi
+
+          # Validate JSON syntax
+          jq empty "$SCAN_RESULTS" || {
+            echo "Error: $SCAN_RESULTS is not valid JSON"
+            exit 1
+          }
+
+          # Validate required top-level fields
+          jq -e 'has("scan_date") and has("summary") and has("operators")' "$SCAN_RESULTS" > /dev/null || {
+            echo "Error: $SCAN_RESULTS missing required fields (scan_date, summary, operators)"
+            exit 1
+          }
+
+          # Validate summary has required fields
+          jq -e '.summary | has("total_operators") and has("pass") and has("partial") and has("none") and has("error") and has("mlkem_percent")' "$SCAN_RESULTS" > /dev/null || {
+            echo "Error: summary in $SCAN_RESULTS missing required fields"
+            exit 1
+          }
+
+          # Validate operators is an array
+          jq -e '.operators | type == "array"' "$SCAN_RESULTS" > /dev/null || {
+            echo "Error: operators in $SCAN_RESULTS must be an array"
+            exit 1
+          }
+
+          echo "✓ Dashboard data validation passed"
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
