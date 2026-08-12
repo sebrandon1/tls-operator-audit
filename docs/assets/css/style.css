@@ -479,7 +479,8 @@ th.sortable.sort-desc::after {
 }
 
 .filter-bar input[type="search"],
-.filter-bar input[type="text"] {
+.filter-bar input[type="text"],
+.filter-bar select.filter-select {
   flex: 1;
   min-width: 200px;
   padding: 0.45rem 0.75rem;
@@ -492,7 +493,8 @@ th.sortable.sort-desc::after {
   transition: background-color 0.3s, border-color 0.3s, color 0.3s;
 }
 
-.filter-bar input:focus {
+.filter-bar input:focus,
+.filter-bar select.filter-select:focus {
   outline: 2px solid var(--color-pqc);
   outline-offset: -1px;
 }

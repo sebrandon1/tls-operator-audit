@@ -8,8 +8,18 @@ title: "Scan History"
 {% assign history = site.data.scan-history %}
 
 {% if history.size > 0 %}
+<div class="filter-bar">
+  <select id="ocp-filter" class="filter-select" onchange="filterHistoryTable()" aria-label="Filter by OCP version">
+    <option value="">All OCP Versions</option>
+  </select>
+  <select id="tco-filter" class="filter-select" onchange="filterHistoryTable()" aria-label="Filter by TCO version">
+    <option value="">All TCO Versions</option>
+  </select>
+  <span id="history-filter-counts"></span>
+</div>
+
 <div class="table-responsive">
-<table class="data-table">
+<table class="data-table" id="history-table">
   <thead>
     <tr>
       <th class="sortable">Scan Date</th>
@@ -28,7 +38,7 @@ title: "Scan History"
   <tbody>
     {% assign sorted_history = history | sort: "scan_date" | reverse %}
     {% for scan in sorted_history %}
-    <tr>
+    <tr data-ocp-version="{{ scan.ocp_version }}" data-tco-version="{% if scan.tco_version and scan.tco_version != '' %}{{ scan.tco_version }}{% else %}none{% endif %}">
       <td>{{ scan.scan_date | date: "%Y-%m-%d %H:%M" }}</td>
       <td>{{ scan.cluster }}</td>
       <td>{{ scan.ocp_version }}</td>
@@ -119,3 +129,5 @@ title: "Scan History"
 {% else %}
 <p class="no-data">No scan history available. Run <code>export-dashboard.sh</code> to populate.</p>
 {% endif %}
+
+<script src="{{ '/assets/js/history-filters.js' | relative_url }}"></script>
