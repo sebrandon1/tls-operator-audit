@@ -132,9 +132,27 @@ collect_endpoint_data() {
     ' 2>/dev/null)
     SUMMARY_DETAIL+=("$detail")
 
+    local expiring_soon expiring_critical expiring_details
+    read -r expiring_critical expiring_soon expiring_details < <(
+        echo "$endpoints" | jq -r --arg warning "$CERT_EXPIRY_WARNING_DAYS" --arg critical "$CERT_EXPIRY_CRITICAL_DAYS" '
+            [.[] | select(.status.daysUntilExpiry != null and .status.daysUntilExpiry > 0 and .status.daysUntilExpiry <= ($warning | tonumber))]
+            | sort_by(.status.daysUntilExpiry) as $sorted
+            | ([.[] | select(.status.daysUntilExpiry <= ($critical | tonumber))] | length),
+              length,
+              (if length > 0 then ($sorted | map("\(.spec.host):\(.spec.port)\t\(.status.daysUntilExpiry) days") | join("\n")) else "" end)
+        ' 2>/dev/null
+    )
+
     echo ""
     echo -e "${BOLD}  Results: $op_name${NC}"
     echo -e "  Endpoints: $total | Compliant: $compliant | ML-KEM: $mlkem | Closed: $closed | Status: $status"
+
+    if [[ "$expiring_critical" -gt 0 ]]; then
+        echo -e "  ${RED}WARNING: $expiring_critical cert(s) expiring within ${CERT_EXPIRY_CRITICAL_DAYS} days!${NC}"
+    elif [[ "$expiring_soon" -gt 0 ]]; then
+        echo -e "  ${YELLOW}WARNING: $expiring_soon cert(s) expiring within ${CERT_EXPIRY_WARNING_DAYS} days${NC}"
+    fi
+
     if [[ -n "$detail" ]]; then
         echo "$detail" | while IFS=$'\t' read -r ns endpoint st pqc mk; do
             if [[ "$mk" == "MLKEM=true" ]]; then
@@ -143,6 +161,18 @@ collect_endpoint_data() {
                 printf "  ${YELLOW}%-30s %-50s %-12s %-12s %s${NC}\n" "$ns" "$endpoint" "$st" "$pqc" "$mk"
             else
                 printf "  ${RED}%-30s %-50s %-12s %-12s %s${NC}\n" "$ns" "$endpoint" "$st" "$pqc" "$mk"
+            fi
+        done
+    fi
+
+    if [[ -n "$expiring_details" ]]; then
+        echo ""
+        echo -e "  ${BOLD}Certificate Expiry Warnings:${NC}"
+        echo "$expiring_details" | while IFS=$'\t' read -r endpoint days; do
+            if [[ "${days%% *}" -le "$CERT_EXPIRY_CRITICAL_DAYS" ]]; then
+                printf "  ${RED}%-60s %s${NC}\n" "$endpoint" "$days"
+            else
+                printf "  ${YELLOW}%-60s %s${NC}\n" "$endpoint" "$days"
             fi
         done
     fi
