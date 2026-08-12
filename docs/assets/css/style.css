@@ -533,6 +533,31 @@ th.sortable.sort-desc::after {
   margin-left: 0.5rem;
 }
 
+.export-buttons {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.export-btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: var(--font-stack);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--filter-btn-bg);
+  color: var(--filter-btn-text);
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.export-btn:hover {
+  background-color: var(--filter-btn-active-bg);
+  color: var(--filter-btn-active-text);
+  border-color: var(--filter-btn-active-bg);
+}
+
 /* ===== Operator Header ===== */
 .operator-header {
   padding: 1.25rem 1.5rem;
