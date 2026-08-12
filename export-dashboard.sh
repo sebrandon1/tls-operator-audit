@@ -375,7 +375,17 @@ if [[ -n "$SCAN_MODE" || -n "$SCAN_OPERATOR" || -n "$SCAN_KUBECONFIG" || -n "$SC
         } | with_entries(select(.value != null and .value != false))')
 fi
 
-# Build a history entry (summary only, no full endpoint data)
+# Build operator summary list (lightweight, without full endpoint data)
+operator_summary=$(echo "$operators_json" | jq '[.[] | {
+    name: .name,
+    status: .status,
+    version: .version,
+    reachable_endpoints: .reachable_endpoints,
+    mlkem_endpoints: .mlkem_endpoints,
+    mlkem_percent: .mlkem_percent
+}]')
+
+# Build a history entry with operator-level summary
 history_entry=$(jq -n \
     --arg scan_date "$scan_date" \
     --arg cluster "$CLUSTER" \
@@ -390,6 +400,7 @@ history_entry=$(jq -n \
     --argjson mlkem_endpoints "$mlkem_endpoints_all" \
     --argjson mlkem_percent "$mlkem_percent" \
     --argjson scan_settings "$scan_settings_json" \
+    --argjson operators "$operator_summary" \
     '{
         scan_date: $scan_date,
         cluster: $cluster,
@@ -404,7 +415,8 @@ history_entry=$(jq -n \
             total_endpoints: $total_endpoints,
             mlkem_endpoints: $mlkem_endpoints,
             mlkem_percent: $mlkem_percent
-        }
+        },
+        operators: $operators
     } + (if $scan_settings != null then {scan_settings: $scan_settings} else {} end)')
 
 # Deduplicate by scan_date+cluster, replacing any existing entry with the same key
