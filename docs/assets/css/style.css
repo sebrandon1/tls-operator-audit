@@ -689,6 +689,29 @@ details summary:hover {
   border-radius: 3px;
 }
 
+/* Cipher tags */
+.cipher-tag {
+  font-size: 0.65rem;
+  padding: 0.1em 0.4em;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+/* Grade explanation */
+.grade-explanation {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  background-color: var(--bg-body);
+  border-radius: 4px;
+  border-left: 3px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.grade-explanation .badge {
+  margin-right: 0.4rem;
+}
+
 /* Detail table (cert info) */
 .detail-table {
   width: 100%;
