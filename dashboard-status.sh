@@ -67,6 +67,7 @@ print_summary "Dashboard Status" \
     "Cluster" "$cluster" \
     "OCP version" "$ocp_version" \
     "TCO version" "$tco_version" \
+    "Operators" "$total_ops" \
     "ML-KEM" "${mlkem_pct}% ($mlkem_eps/$total_eps endpoints)" \
     "Pass" "$pass" \
     "Partial" "$partial" \

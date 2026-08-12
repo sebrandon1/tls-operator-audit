@@ -13,16 +13,16 @@ title: "Index Versions"
 {% assign total = data.operators | size %}
 
 <div class="summary-cards">
-  <div class="card">
+  <div class="card" data-tooltip="Total operators with index version tracking">
     <div class="card-number">{{ total }}</div>
     <div class="card-label">Tracked</div>
   </div>
-  <div class="card card-pass">
+  <div class="card card-pass" data-tooltip="Operators running the latest index version">
     <div class="card-number">{{ total | minus: updates.size }}</div>
     <div class="card-label">Up to Date</div>
   </div>
   {% if updates.size > 0 %}
-  <div class="card card-partial">
+  <div class="card card-partial" data-tooltip="Operators with newer index versions available">
     <div class="card-number">{{ updates.size }}</div>
     <div class="card-label">Updates Available</div>
   </div>
@@ -36,11 +36,11 @@ title: "Index Versions"
   <thead>
     <tr>
       <th class="sortable">Operator</th>
-      <th class="sortable">Index</th>
-      <th class="sortable">Tag</th>
+      <th class="sortable" data-tooltip="Operator catalog index image">Index</th>
+      <th class="sortable" data-tooltip="Index image tag">Tag</th>
       <th class="sortable">Channel</th>
-      <th class="sortable">Index Version</th>
-      <th class="sortable">Scanned Version</th>
+      <th class="sortable" data-tooltip="Latest version in the catalog index">Index Version</th>
+      <th class="sortable" data-tooltip="Version found during last scan">Scanned Version</th>
       <th class="sortable">Status</th>
     </tr>
   </thead>
@@ -69,13 +69,13 @@ title: "Index Versions"
       <td>{{ op.scanned_version | default: "&mdash;" }}</td>
       <td>
         {% if op.update_available %}
-          <span class="badge badge-partial">Update Available</span>
+          <span class="badge badge-partial" data-tooltip="A newer version exists in the catalog index">Update Available</span>
         {% elsif op.error %}
           <span class="badge badge-error">{{ op.error }}</span>
         {% elsif op.version_changed %}
-          <span class="badge badge-pqc">Index Changed</span>
+          <span class="badge badge-pqc" data-tooltip="Index image changed but version is the same">Index Changed</span>
         {% else %}
-          <span class="badge badge-pass">Current</span>
+          <span class="badge badge-pass" data-tooltip="Running the latest available version">Current</span>
         {% endif %}
       </td>
     </tr>

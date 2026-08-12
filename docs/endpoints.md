@@ -8,15 +8,15 @@ title: "Endpoints"
 {% include scan-info.html data=data %}
 
 <div class="summary-cards">
-  <div class="card">
+  <div class="card" data-tooltip="All discovered endpoints across operators">
     <div class="card-number">{{ data.summary.total_endpoints }}</div>
     <div class="card-label">Total Endpoints</div>
   </div>
-  <div class="card card-pass">
+  <div class="card card-pass" data-tooltip="Endpoints supporting ML-KEM key exchange">
     <div class="card-number">{{ data.summary.mlkem_endpoints }}</div>
     <div class="card-label">ML-KEM Endpoints</div>
   </div>
-  <div class="card card-accent">
+  <div class="card card-accent" data-tooltip="Percentage of endpoints with ML-KEM support">
     <div class="card-number">{{ data.summary.mlkem_percent }}%</div>
     <div class="card-label">ML-KEM Coverage</div>
   </div>

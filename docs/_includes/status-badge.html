@@ -1,14 +1,14 @@
 {% assign badge_status = include.status | downcase %}
 {% if badge_status == "pass" %}
-  <span class="badge badge-pass">PASS</span>
+  <span class="badge badge-pass" data-tooltip="All reachable endpoints support ML-KEM">PASS</span>
 {% elsif badge_status == "partial" %}
-  <span class="badge badge-partial">PARTIAL</span>
+  <span class="badge badge-partial" data-tooltip="Some endpoints support ML-KEM">PARTIAL</span>
 {% elsif badge_status == "none" %}
-  <span class="badge badge-none">NONE</span>
+  <span class="badge badge-none" data-tooltip="No endpoints support ML-KEM">NONE</span>
 {% elsif badge_status == "error" %}
-  <span class="badge badge-error">ERROR</span>
+  <span class="badge badge-error" data-tooltip="Scan encountered errors for this operator">ERROR</span>
 {% elsif badge_status == "fail" %}
-  <span class="badge badge-error">FAIL</span>
+  <span class="badge badge-error" data-tooltip="Endpoint failed compliance check">FAIL</span>
 {% else %}
   <span class="badge">{{ include.status }}</span>
 {% endif %}

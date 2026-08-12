@@ -34,7 +34,7 @@ SKIP_TEARDOWN=true
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
-        --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
+        --operators)      require_arg "$1" "${2:-}"; export OPERATORS_FILE="$2"; shift 2 ;;
         --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
         --skip-scan)      SKIP_SCAN=true; shift ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;

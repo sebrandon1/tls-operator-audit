@@ -1,8 +1,8 @@
 <div class="scan-info">
   <span>Scanned: <strong>{{ include.data.scan_date | date: "%Y-%m-%d" }}</strong></span>
   <span>Cluster: <strong>{{ include.data.cluster }}</strong></span>
-  <span>OCP: <strong>{{ include.data.ocp_version }}</strong></span>
+  <span><span data-tooltip="OpenShift Container Platform">OCP</span>: <strong>{{ include.data.ocp_version }}</strong></span>
   {% if include.data.tco_version and include.data.tco_version != "" %}
-  <span>TCO: <strong>{{ include.data.tco_version }}</strong></span>
+  <span><span data-tooltip="tls-compliance-operator">TCO</span>: <strong>{{ include.data.tco_version }}</strong></span>
   {% endif %}
 </div>

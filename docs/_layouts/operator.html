@@ -30,19 +30,19 @@ layout: default
 </div>
 
 <div class="summary-cards">
-  <div class="card">
+  <div class="card" data-tooltip="All discovered endpoints for this operator">
     <div class="card-number">{{ op.total_endpoints }}</div>
     <div class="card-label">Total Endpoints</div>
   </div>
-  <div class="card">
+  <div class="card" data-tooltip="Endpoints accepting connections">
     <div class="card-number">{{ op.reachable_endpoints }}</div>
     <div class="card-label">Reachable</div>
   </div>
-  <div class="card">
+  <div class="card" data-tooltip="Endpoints not accepting connections">
     <div class="card-number">{{ op.closed_endpoints }}</div>
     <div class="card-label">Closed</div>
   </div>
-  <div class="card card-accent">
+  <div class="card card-accent" data-tooltip="Endpoints supporting ML-KEM key exchange">
     <div class="card-number">{{ op.mlkem_endpoints }}</div>
     <div class="card-label">ML-KEM</div>
   </div>
