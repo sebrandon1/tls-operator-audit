@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 source "$SCRIPT_DIR/lib/discovery.sh"
 source "$SCRIPT_DIR/lib/install.sh"
+source "$SCRIPT_DIR/lib/results.sh"
 
 usage() {
     cat <<EOF
@@ -105,11 +106,15 @@ collect_endpoint_data() {
 
     echo "$endpoints" > "$results_dir/report.json"
 
+    generate_reports "$results_dir"
+
     local total mlkem compliant closed
-    total=$(echo "$endpoints" | jq 'length')
-    mlkem=$(echo "$endpoints" | jq '[.[] | select(.status.mlkemSupported == true)] | length')
-    compliant=$(echo "$endpoints" | jq '[.[] | select(.status.complianceStatus == "Compliant")] | length')
-    closed=$(echo "$endpoints" | jq '[.[] | select(.status.complianceStatus == "Closed" or .status.complianceStatus == "Timeout")] | length')
+    read -r total mlkem compliant closed < <(echo "$endpoints" | jq -r '[
+        length,
+        ([.[] | select(.status.mlkemSupported == true)] | length),
+        ([.[] | select(.status.complianceStatus == "Compliant")] | length),
+        ([.[] | select(.status.complianceStatus == "Closed" or .status.complianceStatus == "Timeout")] | length)
+    ] | @tsv')
 
     local reachable=$((total - closed))
     local status
