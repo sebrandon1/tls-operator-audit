@@ -124,6 +124,48 @@ determine_status() {
 }
 
 # ============================================================================
+# RETRY LOGIC
+# ============================================================================
+# Retry a command with exponential backoff
+# Args: command...
+# Env: RETRY_MAX_ATTEMPTS (default: 3), RETRY_INITIAL_BACKOFF (default: 2)
+# Returns: command output on success, returns non-zero exit code on failure
+retry_with_backoff() {
+    local max_retries="${RETRY_MAX_ATTEMPTS:-3}"
+    local backoff="${RETRY_INITIAL_BACKOFF:-2}"
+    local attempt=1
+    local exit_code
+    local output
+    local stderr_file
+    stderr_file=$(mktemp)
+
+    while [[ $attempt -le $max_retries ]]; do
+        output=$("$@" 2>"$stderr_file")
+        exit_code=$?
+
+        if [[ $exit_code -eq 0 ]]; then
+            rm -f "$stderr_file"
+            echo "$output"
+            return 0
+        fi
+
+        if [[ $attempt -lt $max_retries ]]; then
+            log_debug "Command failed (attempt $attempt/$max_retries), retrying in ${backoff}s: $*"
+            sleep "$backoff"
+            backoff=$((backoff * 2))
+            attempt=$((attempt + 1))
+        else
+            log_error "Command failed after $max_retries attempts: $*"
+            if [[ -s "$stderr_file" ]]; then
+                log_debug "Last error: $(cat "$stderr_file")"
+            fi
+            rm -f "$stderr_file"
+            return $exit_code
+        fi
+    done
+}
+
+# ============================================================================
 # CLEANUP
 # ============================================================================
 # Delete TLSComplianceReport CRs for a given namespace
@@ -134,7 +176,7 @@ cleanup_reports() {
     log_debug "Cleaning up TLSComplianceReport CRs for namespace '$namespace'"
 
     local report_names
-    report_names=$(oc get tlscompliancereports -o json 2>/dev/null | \
+    report_names=$(retry_with_backoff oc get tlscompliancereports -o json | \
         jq -r --arg ns "$namespace" '.items[] | select(.spec.sourceNamespace == $ns) | .metadata.name' 2>/dev/null || true)
 
     if [[ -z "$report_names" ]]; then

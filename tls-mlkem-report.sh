@@ -53,7 +53,7 @@ log_success "Connected to $(oc whoami --show-server 2>/dev/null || echo 'cluster
 precheck_tco
 
 log_info "Fetching TLSComplianceReport data..."
-ALL_REPORTS=$(oc get tlscompliancereports -o json 2>/dev/null)
+ALL_REPORTS=$(retry_with_backoff oc get tlscompliancereports -o json)
 
 report_count=$(echo "$ALL_REPORTS" | jq '.items | length')
 log_info "Found $report_count TLSComplianceReport CRs on cluster"
@@ -132,7 +132,7 @@ printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "OPERATOR" "INSTALLED" "TOTAL" "COM
 printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "--------" "---------" "-----" "---------" "------" "---------" "------"
 
 has_failure=false
-CSV_CACHE=$(oc get csv -A -o json 2>/dev/null)
+CSV_CACHE=$(retry_with_backoff oc get csv -A -o json)
 
 declare -a NS_FILTERS=()
 for i in $(seq 0 $((operator_count - 1))); do

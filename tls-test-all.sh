@@ -74,8 +74,8 @@ if [[ -n "$ONLY_OPERATOR" ]]; then
     fi
 fi
 
-CSV_CACHE=$(oc get csv -A -o json 2>/dev/null)
-OCP_VERSION=$(oc version -o json 2>/dev/null | jq -r '.openshiftVersion // "unknown"')
+CSV_CACHE=$(retry_with_backoff oc get csv -A -o json)
+OCP_VERSION=$(retry_with_backoff oc version -o json | jq -r '.openshiftVersion // "unknown"')
 TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
 
 log_info "OCP version: $OCP_VERSION"
@@ -98,7 +98,7 @@ collect_endpoint_data() {
     ns_filter=$(build_ns_filter "$OPERATORS_FILE" "$op_index")
 
     local report_json
-    report_json=$(oc get tlscompliancereports -o json 2>/dev/null)
+    report_json=$(retry_with_backoff oc get tlscompliancereports -o json)
 
     local endpoints
     endpoints=$(echo "$report_json" | jq "
@@ -201,7 +201,7 @@ for i in $(seq 0 $((operator_count - 1))); do
     fi
 
     # Re-fetch CSVs after install to get the new operator's version
-    fresh_csv=$(oc get csv -A -o json 2>/dev/null)
+    fresh_csv=$(retry_with_backoff oc get csv -A -o json)
     op_version=$(get_operator_version "$op_name" "$fresh_csv")
     SUMMARY_VERSIONS+=("$op_version")
     jq -n --arg version "$op_version" --arg tco "$TCO_VERSION" --arg ocp "$OCP_VERSION" \
