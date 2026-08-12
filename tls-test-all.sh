@@ -18,6 +18,7 @@ Options:
   --kubeconfig <path>     Path to kubeconfig (default: \$KUBECONFIG or ~/.kube/config)
   --operators <file>      Operators list file (default: operators.yaml)
   --only <name>           Test a single operator from the list
+  --exclude <name>        Exclude operator(s) from testing (repeatable)
   --skip-teardown         Leave operators installed after scanning
   --scan-wait <seconds>   Time to wait for endpoint discovery (default: 90)
   --verbose               Enable debug output
@@ -29,6 +30,7 @@ EOF
 KUBECONFIG_PATH=""
 OPERATORS_FILE="$SCRIPT_DIR/operators.yaml"
 ONLY_OPERATOR=""
+EXCLUDE_OPERATORS=()
 SKIP_TEARDOWN=false
 SCAN_WAIT=90
 
@@ -37,6 +39,7 @@ while [[ $# -gt 0 ]]; do
         --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
         --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
         --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
+        --exclude)        require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
@@ -220,6 +223,13 @@ for i in $(seq 0 $((operator_count - 1))); do
     if [[ -n "$ONLY_OPERATOR" && "$op_name" != "$ONLY_OPERATOR" ]]; then
         continue
     fi
+
+    for excluded in "${EXCLUDE_OPERATORS[@]}"; do
+        if [[ "$op_name" == "$excluded" ]]; then
+            log_info "Skipping excluded operator: $op_name"
+            continue 2
+        fi
+    done
 
     CURRENT_OPERATOR="$op_name"
     CURRENT_INSTALL_NS="$op_install_ns"

@@ -17,6 +17,7 @@ Options:
   --kubeconfig <path>     Path to kubeconfig (default: \$KUBECONFIG or ~/.kube/config)
   --operators <file>      Operators list file (default: operators.yaml)
   --only <name>           Scan a single operator
+  --exclude <name>        Exclude operator(s) from scanning (repeatable)
   --skip-scan             Skip scanning, just re-export from existing results
   --skip-teardown         Leave operators installed after scanning (default: true)
   --verbose               Enable debug output
@@ -28,6 +29,7 @@ EOF
 KUBECONFIG_PATH=""
 OPERATORS_FILE="$SCRIPT_DIR/operators.yaml"
 ONLY_OPERATOR=""
+EXCLUDE_OPERATORS=()
 SKIP_SCAN=false
 SKIP_TEARDOWN=true
 
@@ -36,6 +38,7 @@ while [[ $# -gt 0 ]]; do
         --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
         --operators)      require_arg "$1" "${2:-}"; export OPERATORS_FILE="$2"; shift 2 ;;
         --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
+        --exclude)        require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
         --skip-scan)      SKIP_SCAN=true; shift ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
@@ -77,6 +80,9 @@ if [[ "$SKIP_SCAN" == "false" ]]; then
     if [[ -n "$ONLY_OPERATOR" ]]; then
         scan_args+=(--only "$ONLY_OPERATOR")
     fi
+    for excluded in "${EXCLUDE_OPERATORS[@]}"; do
+        scan_args+=(--exclude "$excluded")
+    done
     if [[ "${LOG_LEVEL:-3}" -ge 4 ]]; then
         scan_args+=(--verbose)
     fi
