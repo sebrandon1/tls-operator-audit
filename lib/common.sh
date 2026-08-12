@@ -103,6 +103,27 @@ require_cluster() {
 }
 
 # ============================================================================
+# STATUS DETERMINATION
+# ============================================================================
+# Determine ML-KEM compliance status based on endpoint counts
+# Args: reachable_endpoints mlkem_endpoints
+# Returns: PASS|PARTIAL|NONE|FAIL
+determine_status() {
+    local reachable="$1"
+    local mlkem="$2"
+
+    if [[ "$reachable" -eq 0 ]]; then
+        echo "NONE"
+    elif [[ "$mlkem" -eq "$reachable" ]]; then
+        echo "PASS"
+    elif [[ "$mlkem" -gt 0 ]]; then
+        echo "PARTIAL"
+    else
+        echo "FAIL"
+    fi
+}
+
+# ============================================================================
 # TIMING
 # ============================================================================
 start_timer() {
