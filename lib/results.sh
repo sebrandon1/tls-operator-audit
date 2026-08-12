@@ -173,23 +173,3 @@ print_scan_summary() {
     echo ""
 }
 
-cleanup_reports() {
-    local namespace="$1"
-
-    log_info "Cleaning up TLSComplianceReport CRs for namespace '$namespace'..."
-
-    local report_names
-    report_names=$(oc get tlscompliancereports -o json 2>/dev/null | \
-        jq -r --arg ns "$namespace" '.items[] | select(.spec.sourceNamespace == $ns) | .metadata.name' 2>/dev/null || true)
-
-    if [[ -z "$report_names" ]]; then
-        log_debug "No TLSComplianceReport CRs found for namespace '$namespace'."
-        return
-    fi
-
-    local count
-    count=$(echo "$report_names" | wc -l | tr -d ' ')
-
-    echo "$report_names" | xargs -r oc delete tlscompliancereport 2>/dev/null || true
-    log_success "Deleted $count TLSComplianceReport CRs"
-}
