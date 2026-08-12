@@ -103,6 +103,12 @@ require_cluster() {
 }
 
 # ============================================================================
+# CERTIFICATE EXPIRY THRESHOLDS
+# ============================================================================
+export CERT_EXPIRY_WARNING_DAYS=30
+export CERT_EXPIRY_CRITICAL_DAYS=7
+
+# ============================================================================
 # STATUS DETERMINATION
 # ============================================================================
 # Determine ML-KEM compliance status based on endpoint counts

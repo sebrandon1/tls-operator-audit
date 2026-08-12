@@ -19,13 +19,26 @@ generate_markdown() {
 
     log_info "Generating Markdown report..."
 
-    jq -r '
-        "# TLS Compliance Audit Report\n",
-        "| Host | Port | Namespace | Status | TLS 1.2 | TLS 1.3 | Cipher Grade | ML-KEM | PQC Readiness |",
-        "|------|------|-----------|--------|---------|---------|--------------|--------|---------------|",
-        ((.items // [])[] |
-        "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.tlsVersions.tls12 // false) | \(.status.tlsVersions.tls13 // false) | \(.status.overallCipherGrade // "-") | \(.status.mlkemSupported // false) | \(.status.pqcReadiness // "-") |")
-    ' "$json_file" > "$md_file" 2>/dev/null || {
+    {
+        jq -r --arg warning "${CERT_EXPIRY_WARNING_DAYS:-30}" --arg critical "${CERT_EXPIRY_CRITICAL_DAYS:-7}" '
+            def items: if type == "object" and has("items") then .items else . end;
+            "# TLS Compliance Audit Report\n",
+            "| Host | Port | Namespace | Status | TLS 1.2 | TLS 1.3 | Cipher Grade | ML-KEM | PQC Readiness |",
+            "|------|------|-----------|--------|---------|---------|--------------|--------|---------------|",
+            (items[] |
+            "| \(.spec.host // "-") | \(.spec.port // "-") | \(.spec.sourceNamespace // "-") | \(.status.complianceStatus // "-") | \(.status.tlsVersions.tls12 // false) | \(.status.tlsVersions.tls13 // false) | \(.status.overallCipherGrade // "-") | \(.status.mlkemSupported // false) | \(.status.pqcReadiness // "-") |"),
+            (
+                [items[] | select(.status.daysUntilExpiry != null and .status.daysUntilExpiry > 0 and .status.daysUntilExpiry <= ($warning | tonumber))]
+                | sort_by(.status.daysUntilExpiry)
+                | if length > 0 then
+                    "\n## ⚠️ Certificate Expiry Warnings\n\n",
+                    "| Host | Port | Days Until Expiry | Severity |",
+                    "|------|------|-------------------|----------|",
+                    (.[] | "| \(.spec.host) | \(.spec.port) | \(.status.daysUntilExpiry) | \(if .status.daysUntilExpiry <= ($critical | tonumber) then "🔴 Critical" else "🟡 Warning" end) |")
+                  else empty end
+            )
+        ' "$json_file" 2>/dev/null
+    } > "$md_file" 2>/dev/null || {
         jq -r '
             "# TLS Compliance Audit Report\n",
             "| Host | Port | Namespace | Status | Cipher Grade | ML-KEM | PQC Readiness |",
