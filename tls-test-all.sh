@@ -211,7 +211,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         uninstall_operator "$op_name" "$op_install_ns"
         ns_count_cleanup=$(yq ".operators[$i].namespaces | length" "$OPERATORS_FILE")
         for j in $(seq 0 $((ns_count_cleanup - 1))); do
-            cleanup_stale_reports "$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")"
+            cleanup_reports "$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")"
         done
     fi
 done
