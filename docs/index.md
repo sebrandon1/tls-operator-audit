@@ -5,6 +5,10 @@ title: "Dashboard"
 
 {% assign data = site.data.scan-results %}
 
+<script>
+window.scanData = {{ data | jsonify }};
+</script>
+
 {% include scan-info.html data=data %}
 
 <div class="summary-cards">
@@ -43,6 +47,10 @@ title: "Dashboard"
     <button class="filter-btn" data-filter="partial" onclick="setStatusFilter('partial')" aria-pressed="false" data-tooltip="Show partially compliant operators">Partial</button>
     <button class="filter-btn" data-filter="none" onclick="setStatusFilter('none')" aria-pressed="false" data-tooltip="Show non-compliant operators">None</button>
     <button class="filter-btn" data-filter="error" onclick="setStatusFilter('error')" aria-pressed="false" data-tooltip="Show operators with scan errors">Error</button>
+  </div>
+  <div class="export-buttons">
+    <button class="export-btn" onclick="exportOperatorsCSV()" data-tooltip="Download operator data as CSV">CSV</button>
+    <button class="export-btn" onclick="exportOperatorsJSON()" data-tooltip="Download scan results as JSON">JSON</button>
   </div>
   <span id="filter-counts"></span>
 </div>
