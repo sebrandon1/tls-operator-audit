@@ -89,6 +89,37 @@ declare -a SUMMARY_MLKEM=()
 declare -a SUMMARY_DETAIL=()
 declare -a SUMMARY_VERSIONS=()
 
+# Track current operator for cleanup on interrupt
+CURRENT_OPERATOR=""
+CURRENT_INSTALL_NS=""
+CURRENT_OP_INDEX=-1
+WAS_INSTALLED_BY_SCRIPT=false
+
+cleanup_on_interrupt() {
+    echo ""
+    log_warn "Interrupt received, cleaning up..."
+
+    if [[ -n "$CURRENT_OPERATOR" && "$WAS_INSTALLED_BY_SCRIPT" == "true" && "$SKIP_TEARDOWN" == "false" ]]; then
+        log_info "Uninstalling $CURRENT_OPERATOR..."
+        uninstall_operator "$CURRENT_OPERATOR" "$CURRENT_INSTALL_NS"
+
+        if [[ "$CURRENT_OP_INDEX" -ge 0 ]]; then
+            ns_count_cleanup=$(yq ".operators[$CURRENT_OP_INDEX].namespaces | length" "$OPERATORS_FILE" 2>/dev/null || echo "0")
+            for j in $(seq 0 $((ns_count_cleanup - 1))); do
+                cleanup_reports "$(yq -r ".operators[$CURRENT_OP_INDEX].namespaces[$j]" "$OPERATORS_FILE")"
+            done
+        fi
+    fi
+
+    print_mlkem_summary_table "PARTIAL ML-KEM COMPLIANCE SUMMARY (INTERRUPTED)"
+    print_duration
+
+    log_info "Interrupted after processing ${#SUMMARY_NAMES[@]} of $operator_count operators"
+    exit 130
+}
+
+trap cleanup_on_interrupt INT TERM
+
 collect_endpoint_data() {
     local op_name="$1"
     local op_index="$2"
@@ -190,6 +221,11 @@ for i in $(seq 0 $((operator_count - 1))); do
         continue
     fi
 
+    CURRENT_OPERATOR="$op_name"
+    CURRENT_INSTALL_NS="$op_install_ns"
+    CURRENT_OP_INDEX="$i"
+    WAS_INSTALLED_BY_SCRIPT=false
+
     echo ""
     echo -e "${BOLD}━━━ [$((i + 1))/$operator_count] $op_project ($op_name) ━━━${NC}"
 
@@ -230,6 +266,8 @@ for i in $(seq 0 $((operator_count - 1))); do
         continue
     fi
 
+    WAS_INSTALLED_BY_SCRIPT=true
+
     # Re-fetch CSVs after install to get the new operator's version
     fresh_csv=$(retry_with_backoff oc get csv -A -o json)
     op_version=$(get_operator_version "$op_name" "$fresh_csv")
@@ -248,38 +286,11 @@ for i in $(seq 0 $((operator_count - 1))); do
         for j in $(seq 0 $((ns_count_cleanup - 1))); do
             cleanup_reports "$(yq -r ".operators[$i].namespaces[$j]" "$OPERATORS_FILE")"
         done
+        WAS_INSTALLED_BY_SCRIPT=false
     fi
+
+    CURRENT_OPERATOR=""
 done
 
-# Final summary table
-echo ""
-echo ""
-echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BOLD}  ML-KEM COMPLIANCE SUMMARY${NC}"
-echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-printf "  %-40s %-12s %8s %8s %8s\n" "OPERATOR" "VERSION" "TOTAL" "ML-KEM" "STATUS"
-printf "  %-40s %-12s %8s %8s %8s\n" "--------" "-------" "-----" "------" "------"
-
-for idx in "${!SUMMARY_NAMES[@]}"; do
-    local_name="${SUMMARY_NAMES[$idx]}"
-    local_version="${SUMMARY_VERSIONS[$idx]}"
-    local_total="${SUMMARY_TOTAL[$idx]}"
-    local_mlkem="${SUMMARY_MLKEM[$idx]}"
-    local_status="${SUMMARY_STATUS[$idx]}"
-
-    color="$NC"
-    case "$local_status" in
-        PASS)    color="$GREEN" ;;
-        PARTIAL) color="$YELLOW" ;;
-        FAIL)    color="$RED" ;;
-        N/A)     color="$YELLOW" ;;
-        ERROR)   color="$RED" ;;
-    esac
-
-    printf "  ${color}%-40s %-12s %8s %8s %8s${NC}\n" "$local_name" "$local_version" "$local_total" "$local_mlkem" "$local_status"
-done
-
-echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-
+print_mlkem_summary_table "ML-KEM COMPLIANCE SUMMARY"
 print_duration

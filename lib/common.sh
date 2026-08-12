@@ -235,3 +235,35 @@ print_summary() {
     echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 }
+
+print_mlkem_summary_table() {
+    local title="$1"
+    echo ""
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  ${title}${NC}"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    printf "  %-40s %-12s %8s %8s %8s\n" "OPERATOR" "VERSION" "TOTAL" "ML-KEM" "STATUS"
+    printf "  %-40s %-12s %8s %8s %8s\n" "--------" "-------" "-----" "------" "------"
+
+    for idx in "${!SUMMARY_NAMES[@]}"; do
+        local_name="${SUMMARY_NAMES[$idx]}"
+        local_version="${SUMMARY_VERSIONS[$idx]}"
+        local_total="${SUMMARY_TOTAL[$idx]}"
+        local_mlkem="${SUMMARY_MLKEM[$idx]}"
+        local_status="${SUMMARY_STATUS[$idx]}"
+
+        color="$NC"
+        case "$local_status" in
+            PASS)    color="$GREEN" ;;
+            PARTIAL) color="$YELLOW" ;;
+            FAIL)    color="$RED" ;;
+            N/A)     color="$YELLOW" ;;
+            ERROR)   color="$RED" ;;
+        esac
+
+        printf "  ${color}%-40s %-12s %8s %8s %8s${NC}\n" "$local_name" "$local_version" "$local_total" "$local_mlkem" "$local_status"
+    done
+
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
