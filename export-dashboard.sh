@@ -36,9 +36,10 @@ EOF
 }
 
 # Defaults
+readonly UNKNOWN_VALUE="unknown"
 RESULTS_DIR="results"
-CLUSTER="unknown"
-OCP_VERSION="unknown"
+CLUSTER="$UNKNOWN_VALUE"
+OCP_VERSION="$UNKNOWN_VALUE"
 TCO_VERSION=""
 SCAN_MODE=""
 SCAN_OPERATOR=""
@@ -79,6 +80,37 @@ while [[ $# -gt 0 ]]; do
             exit 1 ;;
     esac
 done
+
+auto_detect_value() {
+    local current_value="$1"
+    local field_name="$2"
+    local oc_command="$3"
+
+    if [[ "$current_value" != "$UNKNOWN_VALUE" ]]; then
+        return
+    fi
+
+    log_debug "Auto-detecting $field_name"
+    local detected_value
+    detected_value=$(eval "$oc_command" 2>/dev/null || echo "")
+
+    if [[ -n "$detected_value" ]]; then
+        log_info "Auto-detected $field_name: $detected_value"
+        eval "$4='$detected_value'"
+    else
+        log_warn "Could not auto-detect $field_name, using '$UNKNOWN_VALUE'"
+    fi
+}
+
+if command -v oc &>/dev/null; then
+    auto_detect_value "$CLUSTER" "cluster name" \
+        "oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}'" \
+        "CLUSTER"
+
+    auto_detect_value "$OCP_VERSION" "OCP version" \
+        "oc get clusterversion version -o jsonpath='{.status.desired.version}'" \
+        "OCP_VERSION"
+fi
 
 require_cmd jq yq bc
 
