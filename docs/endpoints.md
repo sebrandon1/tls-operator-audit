@@ -5,7 +5,11 @@ title: "Endpoints"
 
 {% assign data = site.data.scan-results %}
 
-{% include scan-info.html data=data %}
+{% include scan-info.html
+   scan_date=data.scan_date
+   cluster=data.cluster
+   ocp_version=data.ocp_version
+   tco_version=data.tco_version %}
 
 <div class="summary-cards">
   <div class="card" data-tooltip="All discovered endpoints across operators">

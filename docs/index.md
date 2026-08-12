@@ -9,7 +9,11 @@ title: "Dashboard"
 window.scanData = {{ data | jsonify }};
 </script>
 
-{% include scan-info.html data=data %}
+{% include scan-info.html
+   scan_date=data.scan_date
+   cluster=data.cluster
+   ocp_version=data.ocp_version
+   tco_version=data.tco_version %}
 
 <div class="summary-cards">
   <div class="card" data-tooltip="Total operators scanned">
