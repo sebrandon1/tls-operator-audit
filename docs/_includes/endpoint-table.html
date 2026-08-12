@@ -5,13 +5,13 @@
       <th class="sortable">Host:Port</th>
       <th class="sortable">Source</th>
       <th class="sortable">Namespace</th>
-      <th class="sortable">Status</th>
-      <th class="sortable">TLS 1.2</th>
-      <th class="sortable">TLS 1.3</th>
-      <th class="sortable">Grade</th>
-      <th class="sortable">ML-KEM</th>
-      <th class="sortable">PQC</th>
-      <th class="sortable">FS</th>
+      <th class="sortable" data-tooltip="Endpoint compliance status">Status</th>
+      <th class="sortable" data-tooltip="Endpoint supports TLS 1.2">TLS 1.2</th>
+      <th class="sortable" data-tooltip="Endpoint supports TLS 1.3">TLS 1.3</th>
+      <th class="sortable" data-tooltip="Cipher suite security grade">Grade</th>
+      <th class="sortable" data-tooltip="Module-Lattice Key Encapsulation Mechanism">ML-KEM</th>
+      <th class="sortable" data-tooltip="Post-Quantum Cryptography readiness">PQC</th>
+      <th class="sortable" data-tooltip="Forward Secrecy support">FS</th>
     </tr>
   </thead>
   <tbody>
@@ -22,9 +22,11 @@
       <td>{{ ep.source_namespace }}</td>
       <td>
         {% if ep.compliance_status == "Compliant" %}
-          <span class="badge badge-pass">{{ ep.compliance_status }}</span>
-        {% elsif ep.compliance_status == "Closed" or ep.compliance_status == "Timeout" %}
-          <span class="badge badge-none">{{ ep.compliance_status }}</span>
+          <span class="badge badge-pass" data-tooltip="Endpoint meets TLS compliance requirements">{{ ep.compliance_status }}</span>
+        {% elsif ep.compliance_status == "Closed" %}
+          <span class="badge badge-none" data-tooltip="Port is not accepting connections">{{ ep.compliance_status }}</span>
+        {% elsif ep.compliance_status == "Timeout" %}
+          <span class="badge badge-none" data-tooltip="Connection timed out">{{ ep.compliance_status }}</span>
         {% else %}
           <span class="badge badge-error">{{ ep.compliance_status }}</span>
         {% endif %}
@@ -33,11 +35,11 @@
       <td>{% if ep.tls_versions.tls13 %}<span class="badge badge-pass">Yes</span>{% else %}<span class="badge badge-none">No</span>{% endif %}</td>
       <td>
         {% if ep.overall_cipher_grade == "A" %}
-          <span class="badge badge-grade-a">{{ ep.overall_cipher_grade }}</span>
+          <span class="badge badge-grade-a" data-tooltip="Strong ciphers only">{{ ep.overall_cipher_grade }}</span>
         {% elsif ep.overall_cipher_grade == "B" %}
-          <span class="badge badge-grade-b">{{ ep.overall_cipher_grade }}</span>
+          <span class="badge badge-grade-b" data-tooltip="Acceptable ciphers">{{ ep.overall_cipher_grade }}</span>
         {% else %}
-          <span class="badge badge-grade-c">{{ ep.overall_cipher_grade }}</span>
+          <span class="badge badge-grade-c" data-tooltip="Weak ciphers present">{{ ep.overall_cipher_grade }}</span>
         {% endif %}
       </td>
       <td>{% if ep.mlkem_supported %}<span class="badge badge-pass">Yes</span>{% else %}<span class="badge badge-error">No</span>{% endif %}</td>
@@ -70,9 +72,9 @@
                   <td>Expires In</td>
                   <td>
                     {% if ep.certificate_info.days_until_expiry < 7 %}
-                      <span class="cert-warning cert-warning-7d">{{ ep.certificate_info.days_until_expiry }} days</span>
+                      <span class="cert-warning cert-warning-7d" data-tooltip="Certificate expires in less than 7 days">{{ ep.certificate_info.days_until_expiry }} days</span>
                     {% elsif ep.certificate_info.days_until_expiry < 30 %}
-                      <span class="cert-warning cert-warning-30d">{{ ep.certificate_info.days_until_expiry }} days</span>
+                      <span class="cert-warning cert-warning-30d" data-tooltip="Certificate expires in less than 30 days">{{ ep.certificate_info.days_until_expiry }} days</span>
                     {% else %}
                       {{ ep.certificate_info.days_until_expiry }} days
                     {% endif %}
@@ -80,7 +82,7 @@
                 </tr>
                 <tr><td>Key Algorithm</td><td>{{ ep.certificate_info.public_key_algorithm }} ({{ ep.certificate_info.public_key_bits }} bits)</td></tr>
                 <tr><td>Signature</td><td>{{ ep.certificate_info.signature_algorithm }}</td></tr>
-                <tr><td>Hostname Match</td><td>{% if ep.certificate_info.hostname_match %}<span class="badge badge-pass">Yes</span>{% else %}<span class="badge badge-error">No</span>{% endif %}</td></tr>
+                <tr><td>Hostname Match</td><td>{% if ep.certificate_info.hostname_match %}<span class="badge badge-pass" data-tooltip="Certificate matches the endpoint hostname">Yes</span>{% else %}<span class="badge badge-error" data-tooltip="Certificate does not match the endpoint hostname">No</span>{% endif %}</td></tr>
               </table>
             </div>
             {% endif %}

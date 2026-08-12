@@ -8,19 +8,19 @@ title: "Dashboard"
 {% include scan-info.html data=data %}
 
 <div class="summary-cards">
-  <div class="card">
+  <div class="card" data-tooltip="Total operators scanned">
     <div class="card-number">{{ data.summary.total_operators }}</div>
     <div class="card-label">Operators</div>
   </div>
-  <div class="card card-pass">
+  <div class="card card-pass" data-tooltip="Operators with all endpoints supporting ML-KEM">
     <div class="card-number">{{ data.summary.pass }}</div>
     <div class="card-label">Pass</div>
   </div>
-  <div class="card card-partial">
+  <div class="card card-partial" data-tooltip="Operators with some or no ML-KEM support">
     <div class="card-number">{{ data.summary.partial | plus: data.summary.none }}</div>
     <div class="card-label">Partial / None</div>
   </div>
-  <div class="card card-error">
+  <div class="card card-error" data-tooltip="Operators that encountered scan errors">
     <div class="card-number">{{ data.summary.error }}</div>
     <div class="card-label">Error</div>
   </div>
@@ -38,11 +38,11 @@ title: "Dashboard"
 <div class="filter-bar">
   <input type="text" id="table-search" placeholder="Search operators..." oninput="filterTable()" aria-label="Search operators">
   <div class="filter-buttons">
-    <button class="filter-btn active" data-filter="all" onclick="setStatusFilter('all')" aria-pressed="true">All</button>
-    <button class="filter-btn" data-filter="pass" onclick="setStatusFilter('pass')" aria-pressed="false">Pass</button>
-    <button class="filter-btn" data-filter="partial" onclick="setStatusFilter('partial')" aria-pressed="false">Partial</button>
-    <button class="filter-btn" data-filter="none" onclick="setStatusFilter('none')" aria-pressed="false">None</button>
-    <button class="filter-btn" data-filter="error" onclick="setStatusFilter('error')" aria-pressed="false">Error</button>
+    <button class="filter-btn active" data-filter="all" onclick="setStatusFilter('all')" aria-pressed="true" data-tooltip="Show all operators">All</button>
+    <button class="filter-btn" data-filter="pass" onclick="setStatusFilter('pass')" aria-pressed="false" data-tooltip="Show passing operators only">Pass</button>
+    <button class="filter-btn" data-filter="partial" onclick="setStatusFilter('partial')" aria-pressed="false" data-tooltip="Show partially compliant operators">Partial</button>
+    <button class="filter-btn" data-filter="none" onclick="setStatusFilter('none')" aria-pressed="false" data-tooltip="Show non-compliant operators">None</button>
+    <button class="filter-btn" data-filter="error" onclick="setStatusFilter('error')" aria-pressed="false" data-tooltip="Show operators with scan errors">Error</button>
   </div>
   <span id="filter-counts"></span>
 </div>
@@ -53,10 +53,10 @@ title: "Dashboard"
     <tr>
       <th class="sortable">Operator</th>
       <th class="sortable">Version</th>
-      <th class="sortable">Jira</th>
-      <th class="sortable">Catalog</th>
-      <th class="sortable" data-type="number">Endpoints</th>
-      <th class="sortable">ML-KEM</th>
+      <th class="sortable" data-tooltip="Jira tracking issue">Jira</th>
+      <th class="sortable" data-tooltip="Operator catalog source">Catalog</th>
+      <th class="sortable" data-type="number" data-tooltip="Reachable endpoint count">Endpoints</th>
+      <th class="sortable" data-tooltip="ML-KEM supporting endpoints / total reachable">ML-KEM</th>
       <th class="sortable">Status</th>
     </tr>
   </thead>

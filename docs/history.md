@@ -14,14 +14,14 @@ title: "Scan History"
     <tr>
       <th class="sortable">Scan Date</th>
       <th class="sortable">Cluster</th>
-      <th class="sortable">OCP Version</th>
-      <th class="sortable">TCO Version</th>
+      <th class="sortable" data-tooltip="OpenShift Container Platform version">OCP Version</th>
+      <th class="sortable" data-tooltip="tls-compliance-operator version">TCO Version</th>
       <th class="sortable" data-type="number">Operators</th>
       <th class="sortable" data-type="number">Pass</th>
       <th class="sortable" data-type="number">Partial</th>
       <th class="sortable" data-type="number">None</th>
       <th class="sortable" data-type="number">Error</th>
-      <th class="sortable" data-type="number">ML-KEM %</th>
+      <th class="sortable" data-type="number" data-tooltip="Percentage of endpoints supporting ML-KEM">ML-KEM %</th>
       <th>Settings</th>
     </tr>
   </thead>
