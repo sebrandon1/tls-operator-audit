@@ -1,5 +1,5 @@
 {
-  "checked": "2026-08-11T20:35:58Z",
+  "checked": "2026-08-17T21:36:44Z",
   "operators": [
     {
       "name": "cert-manager-operator",
@@ -7,7 +7,7 @@
       "channel": "",
       "catalog_image": "",
       "catalog_url": "",
-      "index_version": "1.20.0",
+      "index_version": "",
       "scanned_version": "1.20.0",
       "update_available": false
     },
@@ -77,9 +77,11 @@
       "channel": "stable",
       "catalog_image": "registry.redhat.io/redhat/redhat-operator-index:v4.22",
       "catalog_url": "https://catalog.redhat.com/en/software/containers/redhat/redhat-operator-index/5f0e4759dd19c7063a78b1f8",
-      "index_version": "1.4.0",
-      "scanned_version": "1.4.0",
-      "update_available": false
+      "index_version": "1.4.1",
+      "scanned_version": "1.4.1",
+      "update_available": false,
+      "version_changed": true,
+      "prev_index_version": "1.4.0"
     },
     {
       "name": "security-profiles-operator",
@@ -117,9 +119,11 @@
       "channel": "latest",
       "catalog_image": "registry.redhat.io/redhat/redhat-operator-index:v4.22",
       "catalog_url": "https://catalog.redhat.com/en/software/containers/redhat/redhat-operator-index/5f0e4759dd19c7063a78b1f8",
-      "index_version": "1.21.2",
-      "scanned_version": "1.21.2",
-      "update_available": false
+      "index_version": "1.21.3",
+      "scanned_version": "1.21.3",
+      "update_available": false,
+      "version_changed": true,
+      "prev_index_version": "1.21.2"
     },
     {
       "name": "rhods-operator",

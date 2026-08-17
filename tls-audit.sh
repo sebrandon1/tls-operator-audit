@@ -6,6 +6,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 source "$SCRIPT_DIR/lib/discovery.sh"
 source "$SCRIPT_DIR/lib/scan.sh"
 source "$SCRIPT_DIR/lib/results.sh"
+source "$SCRIPT_DIR/lib/workload.sh"
 
 usage() {
     cat <<EOF
@@ -118,6 +119,7 @@ audit_operator() {
     run_scan "$op_namespace" "$results_dir" "$image"
     local exit_code="${SCAN_EXIT_CODE:-2}"
 
+    enrich_report_file "${results_dir}/report.json"
     generate_reports "$results_dir"
     print_scan_summary "$results_dir" "$op_display" "$op_namespace" "$exit_code"
 
