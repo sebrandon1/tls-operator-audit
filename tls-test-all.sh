@@ -7,6 +7,7 @@ source "$SCRIPT_DIR/lib/discovery.sh"
 source "$SCRIPT_DIR/lib/install.sh"
 source "$SCRIPT_DIR/lib/results.sh"
 source "$SCRIPT_DIR/lib/workload.sh"
+source "$SCRIPT_DIR/lib/jira.sh"
 
 usage() {
     cat <<EOF
@@ -24,6 +25,7 @@ Options:
   --scan-wait <seconds>   Time to wait for endpoint discovery (default: 90)
   --dry-run               Preview install/scan/teardown without changing the cluster
   --output-format <fmt>   Consolidated summary as json, csv, or markdown
+  --update-jira           Post scan results as comments on operators.yaml Jira tickets
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -38,6 +40,7 @@ SKIP_TEARDOWN=false
 SCAN_WAIT=90
 DRY_RUN=false
 OUTPUT_FORMAT=""
+UPDATE_JIRA=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -49,6 +52,7 @@ while [[ $# -gt 0 ]]; do
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
         --dry-run)        DRY_RUN=true; shift ;;
         --output-format)  require_arg "$1" "${2:-}"; OUTPUT_FORMAT="$2"; shift 2 ;;
+        --update-jira)    UPDATE_JIRA=true; shift ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
@@ -64,7 +68,14 @@ if [[ ! -f "$OPERATORS_FILE" ]]; then
     log_error "Operators file not found: $OPERATORS_FILE"; exit 1
 fi
 
+if [[ "$UPDATE_JIRA" == "true" ]]; then
+    require_jira_credentials
+fi
+
 require_cmd oc jq yq
+if [[ "$UPDATE_JIRA" == "true" && "$DRY_RUN" != "true" ]]; then
+    require_cmd curl
+fi
 resolve_kubeconfig "$KUBECONFIG_PATH"
 
 log_info "Connecting to cluster..."
@@ -140,8 +151,55 @@ print_dry_run_plan() {
     echo ""
 }
 
+preview_jira_comments() {
+    local i op_name op_jira skip excluded
+    for i in $(seq 0 $((operator_count - 1))); do
+        op_name=$(yq -r ".operators[$i].name" "$OPERATORS_FILE")
+        op_jira=$(yq -r ".operators[$i].jira // \"\"" "$OPERATORS_FILE")
+
+        if [[ -n "$ONLY_OPERATOR" && "$op_name" != "$ONLY_OPERATOR" ]]; then
+            continue
+        fi
+
+        skip=false
+        for excluded in "${EXCLUDE_OPERATORS[@]}"; do
+            if [[ "$op_name" == "$excluded" ]]; then
+                skip=true
+                break
+            fi
+        done
+        [[ "$skip" == "true" ]] && continue
+
+        post_result_to_jira "$op_jira" "$op_name" "-" "DRY-RUN" "-" "-" \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${OCP_VERSION:-}" "${TCO_VERSION:-}"
+    done
+}
+
+maybe_comment_jira() {
+    local op_name="$1"
+    local op_jira="$2"
+    [[ "${UPDATE_JIRA:-false}" == "true" ]] || return 0
+
+    local idx=$((${#SUMMARY_NAMES[@]} - 1))
+    if [[ "$idx" -lt 0 ]]; then
+        return 0
+    fi
+
+    post_result_to_jira "$op_jira" "$op_name" \
+        "${SUMMARY_VERSIONS[$idx]}" \
+        "${SUMMARY_STATUS[$idx]}" \
+        "${SUMMARY_TOTAL[$idx]}" \
+        "${SUMMARY_MLKEM[$idx]}" \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "${OCP_VERSION:-}" \
+        "${TCO_VERSION:-}"
+}
+
 if [[ "$DRY_RUN" == "true" ]]; then
     print_dry_run_plan
+    if [[ "$UPDATE_JIRA" == "true" ]]; then
+        preview_jira_comments
+    fi
     print_duration
     exit 0
 fi
@@ -282,6 +340,7 @@ for i in $(seq 0 $((operator_count - 1))); do
     op_catalog=$(yq -r ".operators[$i].catalog" "$OPERATORS_FILE")
     op_channel=$(yq -r ".operators[$i].channel" "$OPERATORS_FILE")
     op_install_ns=$(yq -r ".operators[$i].install_namespace // \"openshift-operators\"" "$OPERATORS_FILE")
+    op_jira=$(yq -r ".operators[$i].jira // \"\"" "$OPERATORS_FILE")
 
     if [[ -n "$ONLY_OPERATOR" && "$op_name" != "$ONLY_OPERATOR" ]]; then
         continue
@@ -314,6 +373,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         jq -n --arg version "$op_version" --arg tco "$TCO_VERSION" --arg ocp "$OCP_VERSION" \
             '{operator_version: $version, tco_version: $tco, ocp_version: $ocp}' > "$results_dir/metadata.json"
         collect_endpoint_data "$op_name" "$i" "$results_dir"
+        maybe_comment_jira "$op_name" "$op_jira"
         continue
     fi
 
@@ -325,6 +385,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         SUMMARY_STATUS+=("N/A")
         SUMMARY_DETAIL+=("")
         SUMMARY_VERSIONS+=("N/A")
+        maybe_comment_jira "$op_name" "$op_jira"
         continue
     fi
 
@@ -336,6 +397,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         SUMMARY_STATUS+=("ERROR")
         SUMMARY_DETAIL+=("")
         SUMMARY_VERSIONS+=("ERROR")
+        maybe_comment_jira "$op_name" "$op_jira"
         continue
     fi
 
@@ -352,6 +414,7 @@ for i in $(seq 0 $((operator_count - 1))); do
     sleep "$SCAN_WAIT"
 
     collect_endpoint_data "$op_name" "$i" "$results_dir"
+    maybe_comment_jira "$op_name" "$op_jira"
 
     if [[ "$SKIP_TEARDOWN" == "false" ]]; then
         uninstall_operator "$op_name" "$op_install_ns"

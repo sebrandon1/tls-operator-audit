@@ -39,6 +39,9 @@ Iterates through `operators.yaml`, installing each operator one at a time, waiti
 
 # Machine-readable consolidated summary (json, csv, or markdown)
 ./tls-test-all.sh --kubeconfig ~/kubeconfig --quiet --output-format json
+
+# Post results to each operator's Jira tracking ticket
+JIRA_TOKEN=... ./tls-test-all.sh --kubeconfig ~/kubeconfig --update-jira
 ```
 
 ### `tls-mlkem-report.sh` — Quick report from existing data
@@ -88,6 +91,7 @@ Reads the `results/` directory and generates the JSON data files, badge, and ope
 Target operators are defined in `operators.yaml`. Each operator entry supports:
 
 - `name`: Operator name (used to match CSV and subscription)
+- `jira`: Tracking issue (used by `--update-jira`)
 - `catalog`: OLM catalog source (e.g., `redhat-operators`)
 - `channel`: OLM subscription channel
 - `namespaces`: List of namespaces to scan for TLS endpoints
@@ -120,6 +124,8 @@ Results are saved to `results/<operator-name>/<timestamp>/`:
 - `report.json` — Full scan results (TLSComplianceReport CRs)
 - `report.md` — Markdown summary table
 - `report.xml` — JUnit XML for CI integration
+
+`--update-jira` posts a wiki-markup comment to each operator's tracking ticket. Set `JIRA_BASE_URL` (default `https://redhat.atlassian.net`) and either `JIRA_TOKEN` (Bearer) or `JIRA_EMAIL` + `JIRA_API_TOKEN` (Cloud Basic auth). Combine with `--dry-run` to print comments without posting.
 
 ## Related
 
