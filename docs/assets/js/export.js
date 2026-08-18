@@ -90,7 +90,7 @@ function exportOperatorCSV(operatorName) {
     return;
   }
 
-  var headers = ['Namespace', 'Host', 'Port', 'Status', 'Grade', 'TLS 1.2', 'TLS 1.3', 'Forward Secrecy', 'ML-KEM', 'PQC Readiness', 'Hostname Match', 'Cert Expiry Days'];
+  var headers = ['Namespace', 'Host', 'Port', 'Status', 'Grade', 'TLS 1.2', 'TLS 1.3', 'Forward Secrecy', 'ML-KEM', 'PQC Readiness', 'Hostname Match', 'Cert Expiry Days', 'Workload'];
   var rows = [headers.join(',')];
 
   op.endpoints.forEach(function(ep) {
@@ -106,7 +106,8 @@ function exportOperatorCSV(operatorName) {
       boolToYesNo(ep.mlkem),
       csvEscape(ep.pqc_readiness || ''),
       boolToYesNo(ep.hostname_match),
-      ep.cert_expiry_days !== undefined ? ep.cert_expiry_days : ''
+      ep.cert_expiry_days !== undefined ? ep.cert_expiry_days : '',
+      csvEscape(formatWorkload(ep))
     ];
     rows.push(row.join(','));
   });
@@ -129,4 +130,25 @@ function csvEscape(str) {
 
 function boolToYesNo(value) {
   return value ? 'Yes' : 'No';
+}
+
+function formatWorkload(ep) {
+  if (!ep || !ep.workload || !Array.isArray(ep.workload.pods) || ep.workload.pods.length === 0) {
+    return '';
+  }
+  var parts = [];
+  ep.workload.pods.forEach(function(pod) {
+    var containers = pod.containers || [];
+    containers.forEach(function(c) {
+      var image = c.image || '';
+      if (c.tag) {
+        image += ':' + c.tag;
+      }
+      if (c.digest) {
+        image += '@' + c.digest;
+      }
+      parts.push((pod.name || '') + '/' + (c.name || '') + ':' + image);
+    });
+  });
+  return parts.join('; ');
 }

@@ -255,7 +255,8 @@ for i in $(seq 0 $((operator_count - 1))); do
             public_key_bits: (.status.certificateInfo.publicKeyBits // 0),
             signature_algorithm: (.status.certificateInfo.signatureAlgorithm // ""),
             hostname_match: (.status.certificateInfo.hostnameMatch // false)
-        }
+        },
+        workload: (.workload // {pods: []})
     }]' "$latest_report")
 
     total_ep=$(echo "$endpoints_json" | jq 'length')

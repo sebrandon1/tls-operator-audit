@@ -704,6 +704,26 @@ details summary:hover {
   letter-spacing: 0.05em;
 }
 
+.detail-section-wide {
+  grid-column: 1 / -1;
+}
+
+.detail-table.workload-table td:first-child {
+  width: auto;
+  font-weight: 400;
+  color: inherit;
+}
+
+.image-digest {
+  display: inline-block;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  user-select: all;
+}
+
 .detail-section ul {
   margin: 0.25rem 0;
   padding-left: 1.25rem;

@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 source "$SCRIPT_DIR/lib/discovery.sh"
 source "$SCRIPT_DIR/lib/results.sh"
+source "$SCRIPT_DIR/lib/workload.sh"
 
 usage() {
     cat <<EOF
@@ -67,6 +68,7 @@ save_and_generate_reports() {
 
     mkdir -p "$results_dir"
     echo "$json_data" > "$results_dir/report.json"
+    enrich_report_file "$results_dir/report.json"
     generate_reports "$results_dir"
     echo "$results_dir"
 }

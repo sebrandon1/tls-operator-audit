@@ -95,6 +95,7 @@ test_export_js_has_required_functions() {
         "exportOperatorCSV"
         "csvEscape"
         "boolToYesNo"
+        "formatWorkload"
         "downloadJSON"
         "downloadCSV"
         "downloadBlob"

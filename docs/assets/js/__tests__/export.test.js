@@ -508,3 +508,41 @@ describe('exportOperatorCSV', () => {
     expect(csv).toContain('"host-with-""quotes"".com"');
   });
 });
+
+describe('formatWorkload', () => {
+  test('returns empty string when workload is missing', () => {
+    expect(formatWorkload({})).toBe('');
+    expect(formatWorkload({ workload: { pods: [] } })).toBe('');
+    expect(formatWorkload(null)).toBe('');
+  });
+
+  test('formats pod/container:image:tag@digest', () => {
+    const result = formatWorkload({
+      workload: {
+        pods: [
+          {
+            name: 'manager-xyz',
+            containers: [
+              {
+                name: 'manager',
+                image: 'quay.io/org/app',
+                tag: 'v2.0',
+                digest: 'sha256:abc',
+              },
+              {
+                name: 'kube-rbac-proxy',
+                image: 'registry.redhat.io/openshift4/ose-kube-rbac-proxy',
+                tag: 'v4.18',
+                digest: 'sha256:def',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(result).toBe(
+      'manager-xyz/manager:quay.io/org/app:v2.0@sha256:abc; manager-xyz/kube-rbac-proxy:registry.redhat.io/openshift4/ose-kube-rbac-proxy:v4.18@sha256:def'
+    );
+  });
+});

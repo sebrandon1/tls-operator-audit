@@ -6,6 +6,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 source "$SCRIPT_DIR/lib/discovery.sh"
 source "$SCRIPT_DIR/lib/install.sh"
 source "$SCRIPT_DIR/lib/results.sh"
+source "$SCRIPT_DIR/lib/workload.sh"
 
 usage() {
     cat <<EOF
@@ -139,6 +140,7 @@ collect_endpoint_data() {
         [.items[] | select($ns_filter)]")
 
     echo "$endpoints" > "$results_dir/report.json"
+    enrich_report_file "$results_dir/report.json"
 
     generate_reports "$results_dir"
 

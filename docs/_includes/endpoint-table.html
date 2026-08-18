@@ -85,6 +85,41 @@
               </div>
               {% endif %}
             </div>
+            {% if ep.workload.pods.size > 0 %}
+            <div class="detail-section detail-section-wide">
+              <h4>Workload</h4>
+              <table class="detail-table workload-table">
+                <thead>
+                  <tr>
+                    <th>Pod</th>
+                    <th>Container</th>
+                    <th>Image</th>
+                    <th>Tag</th>
+                    <th>SHA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for pod in ep.workload.pods %}
+                    {% for c in pod.containers %}
+                    <tr>
+                      <td><code>{{ pod.name }}</code></td>
+                      <td>{{ c.name }}</td>
+                      <td><code>{{ c.image }}</code></td>
+                      <td>{% if c.tag and c.tag != "" %}{{ c.tag }}{% else %}—{% endif %}</td>
+                      <td>
+                        {% if c.digest and c.digest != "" %}
+                          <code class="image-digest" title="{{ c.digest }}">{{ c.digest }}</code>
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
             {% if ep.certificate_info %}
             <div class="detail-section">
               <h4>Certificate</h4>

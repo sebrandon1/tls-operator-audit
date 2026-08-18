@@ -195,5 +195,187 @@
       "mode": "all-operators",
       "kubeconfig": "/Users/bpalm/Downloads/cnfdt16-kubeconfig"
     }
+  },
+  {
+    "scan_date": "2026-08-17T21:30:49Z",
+    "cluster": "cnfdt16",
+    "ocp_version": "5.0.0-0.nightly-2026-08-11-014409",
+    "tco_version": "v1.1.9",
+    "summary": {
+      "total_operators": 20,
+      "pass": 13,
+      "partial": 4,
+      "none": 2,
+      "error": 1,
+      "total_endpoints": 171,
+      "mlkem_endpoints": 166,
+      "mlkem_percent": 97.0
+    },
+    "operators": [
+      {
+        "name": "cert-manager-operator",
+        "status": "PASS",
+        "version": "1.20.0",
+        "reachable_endpoints": 3,
+        "mlkem_endpoints": 3,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "compliance-operator",
+        "status": "NONE",
+        "version": "1.8.2",
+        "reachable_endpoints": 0,
+        "mlkem_endpoints": 0,
+        "mlkem_percent": 0.0
+      },
+      {
+        "name": "openshift-pipelines-operator-rh",
+        "status": "PASS",
+        "version": "1.23.1",
+        "reachable_endpoints": 11,
+        "mlkem_endpoints": 11,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "rhacs-operator",
+        "status": "PASS",
+        "version": "4.11.2",
+        "reachable_endpoints": 4,
+        "mlkem_endpoints": 4,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "servicemeshoperator3",
+        "status": "PASS",
+        "version": "3.4.1",
+        "reachable_endpoints": 5,
+        "mlkem_endpoints": 5,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "skupper-operator",
+        "status": "PASS",
+        "version": "2.2.1-rh-1",
+        "reachable_endpoints": 7,
+        "mlkem_endpoints": 7,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "openshift-external-secrets-operator",
+        "status": "PASS",
+        "version": "1.2.0",
+        "reachable_endpoints": 8,
+        "mlkem_endpoints": 8,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "file-integrity-operator",
+        "status": "PASS",
+        "version": "1.4.1",
+        "reachable_endpoints": 8,
+        "mlkem_endpoints": 8,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "security-profiles-operator",
+        "status": "PASS",
+        "version": "0.10.0",
+        "reachable_endpoints": 8,
+        "mlkem_endpoints": 8,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "sandboxed-containers-operator",
+        "status": "PASS",
+        "version": "1.13.1",
+        "reachable_endpoints": 2,
+        "mlkem_endpoints": 2,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "trustee-operator",
+        "status": "PASS",
+        "version": "1.2.1",
+        "reachable_endpoints": 1,
+        "mlkem_endpoints": 1,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "openshift-gitops-operator",
+        "status": "PASS",
+        "version": "1.21.3",
+        "reachable_endpoints": 12,
+        "mlkem_endpoints": 12,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "rhods-operator",
+        "status": "PARTIAL",
+        "version": "2.25.8",
+        "reachable_endpoints": 13,
+        "mlkem_endpoints": 12,
+        "mlkem_percent": 92.3
+      },
+      {
+        "name": "openshift-zero-trust-workload-identity-manager",
+        "status": "PARTIAL",
+        "version": "1.1.0",
+        "reachable_endpoints": 20,
+        "mlkem_endpoints": 18,
+        "mlkem_percent": 90.0
+      },
+      {
+        "name": "ptp-operator",
+        "status": "PASS",
+        "version": "4.22.0-202608042055",
+        "reachable_endpoints": 7,
+        "mlkem_endpoints": 7,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "metallb-operator",
+        "status": "PARTIAL",
+        "version": "4.22.0-202608042055",
+        "reachable_endpoints": 30,
+        "mlkem_endpoints": 29,
+        "mlkem_percent": 96.6
+      },
+      {
+        "name": "sriov-network-operator",
+        "status": "NONE",
+        "version": "4.22.0-202608050337",
+        "reachable_endpoints": 0,
+        "mlkem_endpoints": 0,
+        "mlkem_percent": 0.0
+      },
+      {
+        "name": "numaresources-operator",
+        "status": "PARTIAL",
+        "version": "4.22.1",
+        "reachable_endpoints": 31,
+        "mlkem_endpoints": 30,
+        "mlkem_percent": 96.7
+      },
+      {
+        "name": "lifecycle-agent",
+        "status": "PASS",
+        "version": "4.22.1",
+        "reachable_endpoints": 1,
+        "mlkem_endpoints": 1,
+        "mlkem_percent": 100.0
+      },
+      {
+        "name": "topology-aware-lifecycle-manager",
+        "status": "ERROR",
+        "version": "",
+        "reachable_endpoints": 0,
+        "mlkem_endpoints": 0,
+        "mlkem_percent": null
+      }
+    ],
+    "scan_settings": {
+      "mode": "all-operators",
+      "kubeconfig": "/Users/bpalm/Downloads/Work/Kubeconfigs/cnfdt16-kubeconfig"
+    }
   }
 ]
