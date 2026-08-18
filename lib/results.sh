@@ -449,3 +449,103 @@ print_scan_summary() {
     echo ""
 }
 
+# ============================================================================
+# CONSOLIDATED SUMMARY OUTPUT (--output-format)
+# ============================================================================
+
+validate_output_format() {
+    local format="${1:-}"
+    case "$format" in
+        json|csv|markdown) return 0 ;;
+        *)
+            log_error "Invalid --output-format '${format}' (expected json, csv, or markdown)"
+            exit 1
+            ;;
+    esac
+}
+
+# Convert a JSON array of objects to json, csv, or markdown.
+# Args: format wrapper_key json_keys csv_headers json_array
+#   json_keys:    space-separated object keys (JSON field order)
+#   csv_headers:  space-separated display headers for csv/markdown
+emit_consolidated_output() {
+    local format="$1"
+    local wrapper_key="$2"
+    local json_keys="$3"
+    local csv_headers="$4"
+    local rows="$5"
+
+    case "$format" in
+        json)
+            jq -n --arg key "$wrapper_key" --argjson rows "$rows" '{($key): $rows}'
+            ;;
+        csv)
+            echo "$rows" | jq -r --arg keys "$json_keys" --arg headers "$csv_headers" '
+                ($headers | split(" ")) as $h
+                | ($keys | split(" ")) as $k
+                | ($h | @csv),
+                  (.[] | [.[$k[]]] | @csv)
+            '
+            ;;
+        markdown)
+            echo "$rows" | jq -r --arg keys "$json_keys" --arg headers "$csv_headers" '
+                ($headers | split(" ")) as $h
+                | ($keys | split(" ")) as $k
+                | "| " + ($h | join(" | ")) + " |",
+                  "| " + ($h | map("---") | join(" | ")) + " |",
+                  (.[] | "| " + ([.[$k[]]] | map(tostring) | join(" | ")) + " |")
+            '
+            ;;
+        *)
+            log_error "Invalid --output-format '${format}' (expected json, csv, or markdown)"
+            return 1
+            ;;
+    esac
+}
+
+# Build a JSON array from tls-test-all.sh SUMMARY_* arrays.
+summary_rows_json() {
+    local rows='[]'
+    local idx
+    local total mlkem
+
+    if [[ ${#SUMMARY_NAMES[@]} -eq 0 ]]; then
+        echo "$rows"
+        return
+    fi
+
+    for idx in "${!SUMMARY_NAMES[@]}"; do
+        total="${SUMMARY_TOTAL[$idx]}"
+        mlkem="${SUMMARY_MLKEM[$idx]}"
+        rows=$(jq -c \
+            --arg name "${SUMMARY_NAMES[$idx]}" \
+            --arg version "${SUMMARY_VERSIONS[$idx]}" \
+            --arg total "$total" \
+            --arg mlkem "$mlkem" \
+            --arg status "${SUMMARY_STATUS[$idx]}" \
+            '. + [{
+                name: $name,
+                version: $version,
+                total: (if ($total | test("^-?[0-9]+$")) then ($total | tonumber) else $total end),
+                mlkem: (if ($mlkem | test("^-?[0-9]+$")) then ($mlkem | tonumber) else $mlkem end),
+                status: $status
+            }]' <<< "$rows")
+    done
+    echo "$rows"
+}
+
+emit_mlkem_summary() {
+    local format="${1:-}"
+    local title="${2:-ML-KEM COMPLIANCE SUMMARY}"
+
+    if [[ -z "$format" ]]; then
+        print_mlkem_summary_table "$title"
+        return
+    fi
+
+    emit_consolidated_output "$format" "operators" \
+        "name version total mlkem status" \
+        "operator version total mlkem status" \
+        "$(summary_rows_json)"
+}
+

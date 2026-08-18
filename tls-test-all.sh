@@ -23,6 +23,7 @@ Options:
   --skip-teardown         Leave operators installed after scanning
   --scan-wait <seconds>   Time to wait for endpoint discovery (default: 90)
   --dry-run               Preview install/scan/teardown without changing the cluster
+  --output-format <fmt>   Consolidated summary as json, csv, or markdown
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -36,6 +37,7 @@ EXCLUDE_OPERATORS=()
 SKIP_TEARDOWN=false
 SCAN_WAIT=90
 DRY_RUN=false
+OUTPUT_FORMAT=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -46,12 +48,17 @@ while [[ $# -gt 0 ]]; do
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
         --dry-run)        DRY_RUN=true; shift ;;
+        --output-format)  require_arg "$1" "${2:-}"; OUTPUT_FORMAT="$2"; shift 2 ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
+
+if [[ -n "$OUTPUT_FORMAT" ]]; then
+    validate_output_format "$OUTPUT_FORMAT"
+fi
 
 if [[ ! -f "$OPERATORS_FILE" ]]; then
     log_error "Operators file not found: $OPERATORS_FILE"; exit 1
@@ -169,7 +176,7 @@ cleanup_on_interrupt() {
         fi
     fi
 
-    print_mlkem_summary_table "PARTIAL ML-KEM COMPLIANCE SUMMARY (INTERRUPTED)"
+    emit_mlkem_summary "$OUTPUT_FORMAT" "PARTIAL ML-KEM COMPLIANCE SUMMARY (INTERRUPTED)"
     print_duration
 
     log_info "Interrupted after processing ${#SUMMARY_NAMES[@]} of $operator_count operators"
@@ -358,5 +365,5 @@ for i in $(seq 0 $((operator_count - 1))); do
     CURRENT_OPERATOR=""
 done
 
-print_mlkem_summary_table "ML-KEM COMPLIANCE SUMMARY"
+emit_mlkem_summary "$OUTPUT_FORMAT" "ML-KEM COMPLIANCE SUMMARY"
 print_duration
