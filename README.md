@@ -2,134 +2,109 @@
 
 [![ML-KEM Compliance](https://img.shields.io/endpoint?url=https%3A%2F%2Fsebrandon1.github.io%2Ftls-operator-audit%2Fbadges%2Fmlkem.json)](https://sebrandon1.github.io/tls-operator-audit/)
 
-Audit OCP operators for ML-KEM/PQC and TLS compliance using the [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator).
+Audit OpenShift operators for ML-KEM/PQC TLS compliance using the [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator).
 
-Installs each operator one at a time, scans its TLS endpoints for ML-KEM support, collects results, and tears down before moving to the next. Tracked under [OCPSTRAT-3491](https://redhat.atlassian.net/browse/OCPSTRAT-3491) / [OCPSTRAT-3303](https://redhat.atlassian.net/browse/OCPSTRAT-3303).
+Operators in `operators.yaml` are scanned for ML-KEM on their TLS endpoints. Results feed the [dashboard](https://sebrandon1.github.io/tls-operator-audit/). Tracked under [OCPSTRAT-3491](https://redhat.atlassian.net/browse/OCPSTRAT-3491) / [OCPSTRAT-3303](https://redhat.atlassian.net/browse/OCPSTRAT-3303).
 
-## Results
+## Quick start
 
-View the full interactive dashboard at **[sebrandon1.github.io/tls-operator-audit](https://sebrandon1.github.io/tls-operator-audit/)**.
+```bash
+./scan-and-export.sh --kubeconfig ~/kubeconfig
+```
 
-The dashboard shows per-operator ML-KEM compliance status with drill-down into individual TLS endpoints, cipher suites, certificate details, and scan history.
+Scans every listed operator, exports dashboard data, and checks catalog index versions. Operators are left installed (`--skip-teardown` is the default).
+
+```bash
+# One operator
+./scan-and-export.sh --kubeconfig ~/kubeconfig --only rhacs-operator
+
+# Preview without changing the cluster or dashboard
+./scan-and-export.sh --kubeconfig ~/kubeconfig --dry-run
+
+# Rebuild dashboard data from existing results/
+./scan-and-export.sh --kubeconfig ~/kubeconfig --skip-scan
+```
+
+Run any script with `--help` for the full flag list.
 
 ## Prerequisites
 
-- `oc` CLI with cluster-admin access
-- `jq` for JSON processing
-- `yq` for YAML processing (v4+)
-- [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator) deployed on the target cluster
+- `oc` with cluster-admin access
+- `jq`, `yq` (v4+), and `bc`
+- [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator) on the target cluster
+- `curl` when using `--update-jira`
 
 ## Scripts
 
-### `tls-test-all.sh` — Full test runner (install, scan, teardown)
-
-Iterates through `operators.yaml`, installing each operator one at a time, waiting for the tls-compliance-operator to discover its endpoints, collecting ML-KEM results, then tearing down.
+| Script | Purpose |
+| --- | --- |
+| `scan-and-export.sh` | Full pipeline: scan, export dashboard, check index versions |
+| `tls-test-all.sh` | Install / scan / tear down each operator (teardown is the default) |
+| `tls-mlkem-report.sh` | Report from existing TLSComplianceReport CRs (no new scan) |
+| `tls-audit.sh` | Scoped run-once scan Job for one operator (or `--list-operators`) |
+| `compare-scans.sh` | Diff ML-KEM support between two `results/` runs |
+| `export-dashboard.sh` | Build dashboard JSON, badge, and operator pages from `results/` |
+| `check-index-versions.sh` | Compare scanned versions to catalog indexes |
+| `dashboard-status.sh` | Local dashboard summary (no cluster needed) |
 
 ```bash
-./tls-test-all.sh --kubeconfig ~/kubeconfig
-
-# Test a single operator
+# Tear down after each operator
 ./tls-test-all.sh --kubeconfig ~/kubeconfig --only rhacs-operator
 
-# Keep operators installed after scanning
-./tls-test-all.sh --kubeconfig ~/kubeconfig --skip-teardown
-
-# Preview install/scan/teardown without changing the cluster
-./tls-test-all.sh --kubeconfig ~/kubeconfig --dry-run
-
-# Machine-readable consolidated summary (json, csv, or markdown)
+# Machine-readable summary (json, csv, or markdown)
 ./tls-test-all.sh --kubeconfig ~/kubeconfig --quiet --output-format json
 
-# Post results to each operator's Jira tracking ticket
+# Diff two timestamped runs (exits 1 if any endpoint lost ML-KEM)
+./compare-scans.sh 20260811-083813 20260817-152728
+
+# Post a comment on each operator's Jira ticket
 JIRA_TOKEN=... ./tls-test-all.sh --kubeconfig ~/kubeconfig --update-jira
 ```
 
-### `tls-mlkem-report.sh` — Quick report from existing data
+`--update-jira` needs `JIRA_TOKEN` (Bearer) or `JIRA_EMAIL` + `JIRA_API_TOKEN` (Cloud Basic). Default `JIRA_BASE_URL` is `https://redhat.atlassian.net`. Combine with `--dry-run` to print comments without posting.
 
-Queries existing TLSComplianceReport CRs on the cluster (no new scan). Useful for checking operators that are already installed.
+## Operator configuration
 
-```bash
-./tls-mlkem-report.sh --kubeconfig ~/kubeconfig
+Operators live in `operators.yaml`:
 
-# Report on all namespaces, not just listed operators
-./tls-mlkem-report.sh --kubeconfig ~/kubeconfig --all-namespaces
+- `name` — OLM package name (CSV / subscription match)
+- `jira` — tracking issue (`--update-jira`)
+- `project` — display name
+- `catalog` / `channel` — OLM source (`null` if pre-installed)
+- `namespaces` — namespaces to collect TLS reports from
+- `install_namespace` — set for OwnNamespace operators (skips default `openshift-operators`)
 
-# Machine-readable consolidated summary
-./tls-mlkem-report.sh --kubeconfig ~/kubeconfig --output-format csv
-```
+When `install_namespace` is set, the runner creates the namespace, an OperatorGroup targeting it, and the subscription there:
 
-### `tls-audit.sh` — Single operator scan via run-once Job
-
-Deploys a scoped run-once scan Job for a specific operator. Produces JSON, Markdown, and JUnit reports.
-
-```bash
-./tls-audit.sh --operator cert-manager-operator --kubeconfig ~/kubeconfig
-./tls-audit.sh --list-operators --kubeconfig ~/kubeconfig
-```
-
-### `compare-scans.sh` — Diff ML-KEM support between two runs
-
-Compare timestamped result trees and report endpoints that gained or lost ML-KEM support. Exits 1 if any endpoint lost ML-KEM.
-
-```bash
-./compare-scans.sh 20260801-120000 20260810-150000
-
-# Machine-readable diff
-./compare-scans.sh 20260801-120000 20260810-150000 --output-format json
-```
-
-### `export-dashboard.sh` — Generate dashboard data from local results
-
-Reads the `results/` directory and generates the JSON data files, badge, and operator pages for the GitHub Pages dashboard.
-
-```bash
-./export-dashboard.sh --cluster cnfdt16 --ocp-version 5.0
-```
-
-## Operator Configuration
-
-Target operators are defined in `operators.yaml`. Each operator entry supports:
-
-- `name`: Operator name (used to match CSV and subscription)
-- `jira`: Tracking issue (used by `--update-jira`)
-- `catalog`: OLM catalog source (e.g., `redhat-operators`)
-- `channel`: OLM subscription channel
-- `namespaces`: List of namespaces to scan for TLS endpoints
-- `install_namespace`: (Optional) Namespace to install into for OwnNamespace mode operators
-
-### OperatorGroup-Scoped Installations
-
-Some operators require **OwnNamespace** install mode and cannot be installed in the default `openshift-operators` namespace. For these operators, specify `install_namespace` to:
-
-1. Create a dedicated namespace
-2. Create an OperatorGroup with `targetNamespaces: [namespace]`
-3. Install the subscription in that namespace
-
-Example:
 ```yaml
 - name: sandboxed-containers-operator
-  catalog: redhat-operators
+  catalog: redhat-operators-v422
   channel: stable
   install_namespace: openshift-sandboxed-containers-operator
   namespaces:
     - openshift-sandboxed-containers-operator
 ```
 
-This is handled automatically by `tls-test-all.sh` during installation.
-
 ## Output
 
-Results are saved to `results/<operator-name>/<timestamp>/`:
+Each run writes `results/<operator>/<YYYYMMDD-HHMMSS>/`:
 
-- `report.json` — Full scan results (TLSComplianceReport CRs)
-- `report.md` — Markdown summary table
-- `report.xml` — JUnit XML for CI integration
+- `report.json` — TLSComplianceReport CRs
+- `report.md` — markdown table
+- `report.xml` — JUnit XML
+- `report.html` — HTML summary
 
-`--update-jira` posts a wiki-markup comment to each operator's tracking ticket. Set `JIRA_BASE_URL` (default `https://redhat.atlassian.net`) and either `JIRA_TOKEN` (Bearer) or `JIRA_EMAIL` + `JIRA_API_TOKEN` (Cloud Basic auth). Combine with `--dry-run` to print comments without posting.
+Dashboard files are generated under `docs/` (`_data/`, `badges/`, `operators/`).
+
+## Tests
+
+```bash
+bash tests/run_tests.sh
+```
 
 ## Related
 
-- [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator) — The scanner that probes TLS endpoints
+- [tls-compliance-operator](https://github.com/sebrandon1/tls-compliance-operator) — TLS endpoint scanner
 - [OCPSTRAT-3491](https://redhat.atlassian.net/browse/OCPSTRAT-3491) — PQC ML-KEM Testing for Telco Operators
-- [OCPSTRAT-3303](https://redhat.atlassian.net/browse/OCPSTRAT-3303) — PQC ML-KEM Testing - Platform Agnostic & Rolling Streams
+- [OCPSTRAT-3303](https://redhat.atlassian.net/browse/OCPSTRAT-3303) — PQC ML-KEM Testing - OCP Platform Agnostic & Rolling Streams Operators
 - [CNF-25677](https://redhat.atlassian.net/browse/CNF-25677) — Central TLS Profile Consistency - CurvePreference in 5.1
