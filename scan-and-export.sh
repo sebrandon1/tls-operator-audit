@@ -21,6 +21,7 @@ Options:
   --skip-scan             Skip scanning, just re-export from existing results
   --skip-teardown         Leave operators installed after scanning (default: true)
   --dry-run               Preview scan actions without changing the cluster or dashboard
+  --update-jira           Post scan results as comments on operators.yaml Jira tickets
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -34,6 +35,7 @@ EXCLUDE_OPERATORS=()
 SKIP_SCAN=false
 SKIP_TEARDOWN=true
 DRY_RUN=false
+UPDATE_JIRA=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -44,6 +46,7 @@ while [[ $# -gt 0 ]]; do
         --skip-scan)      SKIP_SCAN=true; shift ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --dry-run)        DRY_RUN=true; shift ;;
+        --update-jira)    UPDATE_JIRA=true; shift ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
@@ -95,6 +98,9 @@ if [[ "$SKIP_SCAN" == "false" ]]; then
     done
     if [[ "$DRY_RUN" == "true" ]]; then
         scan_args+=(--dry-run)
+    fi
+    if [[ "$UPDATE_JIRA" == "true" ]]; then
+        scan_args+=(--update-jira)
     fi
     if [[ "${LOG_LEVEL:-3}" -ge 4 ]]; then
         scan_args+=(--verbose)
