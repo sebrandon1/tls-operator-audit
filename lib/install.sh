@@ -178,3 +178,32 @@ uninstall_operator() {
     log_warn "Some $name pods still running after ${timeout}s, proceeding"
 }
 
+# ============================================================================
+# DRY-RUN PLANNING
+# ============================================================================
+# Decide what tls-test-all.sh would do for one operator without mutating the cluster.
+# Args: name catalog csv_json skip_teardown
+# Prints: installed<TAB>action
+plan_operator_action() {
+    local name="$1"
+    local catalog="$2"
+    local csv_json="$3"
+    local skip_teardown="${4:-false}"
+
+    if is_operator_installed "$name" "$csv_json"; then
+        printf '%s\t%s\n' "yes" "SCAN in-place"
+        return
+    fi
+
+    if [[ "$catalog" == "null" || -z "$catalog" ]]; then
+        printf '%s\t%s\n' "no" "SKIP (catalog null)"
+        return
+    fi
+
+    if [[ "$skip_teardown" == "true" ]]; then
+        printf '%s\t%s\n' "no" "INSTALL → SCAN"
+    else
+        printf '%s\t%s\n' "no" "INSTALL → SCAN → TEARDOWN"
+    fi
+}
+
