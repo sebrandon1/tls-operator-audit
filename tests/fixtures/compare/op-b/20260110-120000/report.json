@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "spec": {
+        "host": "stable.example",
+        "port": 443,
+        "sourceNamespace": "op-b"
+      },
+      "status": {
+        "complianceStatus": "Compliant",
+        "mlkemSupported": true
+      }
+    }
+  ]
+}

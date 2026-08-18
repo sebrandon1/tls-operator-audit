@@ -1,0 +1,13 @@
+[
+  {
+    "spec": {
+      "host": "only-after.example",
+      "port": 9443,
+      "sourceNamespace": "op-c"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true
+    }
+  }
+]
