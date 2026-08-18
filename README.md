@@ -36,6 +36,9 @@ Iterates through `operators.yaml`, installing each operator one at a time, waiti
 
 # Preview install/scan/teardown without changing the cluster
 ./tls-test-all.sh --kubeconfig ~/kubeconfig --dry-run
+
+# Machine-readable consolidated summary (json, csv, or markdown)
+./tls-test-all.sh --kubeconfig ~/kubeconfig --quiet --output-format json
 ```
 
 ### `tls-mlkem-report.sh` — Quick report from existing data
@@ -47,6 +50,9 @@ Queries existing TLSComplianceReport CRs on the cluster (no new scan). Useful fo
 
 # Report on all namespaces, not just listed operators
 ./tls-mlkem-report.sh --kubeconfig ~/kubeconfig --all-namespaces
+
+# Machine-readable consolidated summary
+./tls-mlkem-report.sh --kubeconfig ~/kubeconfig --output-format csv
 ```
 
 ### `tls-audit.sh` — Single operator scan via run-once Job
