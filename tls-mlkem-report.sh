@@ -20,6 +20,7 @@ Options:
   --operators <file>      Operators list file (default: operators.yaml)
   --all-namespaces        Report on all namespaces, not just listed operators
   --output-dir <dir>      Results directory (default: results)
+  --output-format <fmt>   Consolidated summary as json, csv, or markdown
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -30,6 +31,7 @@ KUBECONFIG_PATH=""
 OPERATORS_FILE="$SCRIPT_DIR/operators.yaml"
 ALL_NAMESPACES=false
 OUTPUT_DIR="$SCRIPT_DIR/results"
+OUTPUT_FORMAT=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -37,12 +39,17 @@ while [[ $# -gt 0 ]]; do
         --operators)      require_arg "$1" "${2:-}"; OPERATORS_FILE="$2"; shift 2 ;;
         --all-namespaces) ALL_NAMESPACES=true; shift ;;
         --output-dir)     require_arg "$1" "${2:-}"; OUTPUT_DIR="$2"; shift 2 ;;
+        --output-format)  require_arg "$1" "${2:-}"; OUTPUT_FORMAT="$2"; shift 2 ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
         *)                log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
+
+if [[ -n "$OUTPUT_FORMAT" ]]; then
+    validate_output_format "$OUTPUT_FORMAT"
+fi
 
 require_cmd oc jq
 resolve_kubeconfig "$KUBECONFIG_PATH"
@@ -77,13 +84,7 @@ if [[ "$ALL_NAMESPACES" == "true" ]]; then
     results_dir=$(save_and_generate_reports "all-namespaces" "$ALL_REPORTS")
     log_success "Results saved to: $results_dir/"
 
-    echo ""
-    echo -e "${BOLD}ML-KEM COMPLIANCE REPORT (ALL NAMESPACES)${NC}"
-    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    printf "%-45s %6s %10s %8s %10s %8s\n" "NAMESPACE" "TOTAL" "COMPLIANT" "ML-KEM" "PQC READY" "CLOSED"
-    printf "%-45s %6s %10s %8s %10s %8s\n" "---------" "-----" "---------" "------" "---------" "------"
-
-    echo "$ALL_REPORTS" | jq -r '
+    ns_rows=$(echo "$ALL_REPORTS" | jq -c '
       [.items[] | {
         ns: .spec.sourceNamespace,
         status: .status.complianceStatus,
@@ -92,17 +93,32 @@ if [[ "$ALL_NAMESPACES" == "true" ]]; then
       }]
       | group_by(.ns)
       | map({
-        ns: .[0].ns,
+        namespace: .[0].ns,
         total: length,
         compliant: ([.[] | select(.status == "Compliant")] | length),
         mlkem: ([.[] | select(.mlkem == true)] | length),
         pqc_ready: ([.[] | select(.pqc == "PQCReady")] | length),
         closed: ([.[] | select(.status == "Closed" or .status == "Timeout")] | length)
       })
-      | sort_by(.ns)
-      | .[]
-      | "\(.ns)\t\(.total)\t\(.compliant)\t\(.mlkem)\t\(.pqc_ready)\t\(.closed)"
-    ' | while IFS=$'\t' read -r ns total compliant mlkem pqc closed; do
+      | sort_by(.namespace)
+    ')
+
+    if [[ -n "$OUTPUT_FORMAT" ]]; then
+        emit_consolidated_output "$OUTPUT_FORMAT" "namespaces" \
+            "namespace total compliant mlkem pqc_ready closed" \
+            "namespace total compliant mlkem pqc_ready closed" \
+            "$ns_rows"
+        exit 0
+    fi
+
+    echo ""
+    echo -e "${BOLD}ML-KEM COMPLIANCE REPORT (ALL NAMESPACES)${NC}"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    printf "%-45s %6s %10s %8s %10s %8s\n" "NAMESPACE" "TOTAL" "COMPLIANT" "ML-KEM" "PQC READY" "CLOSED"
+    printf "%-45s %6s %10s %8s %10s %8s\n" "---------" "-----" "---------" "------" "---------" "------"
+
+    echo "$ns_rows" | jq -r '.[] | "\(.namespace)\t\(.total)\t\(.compliant)\t\(.mlkem)\t\(.pqc_ready)\t\(.closed)"' | \
+    while IFS=$'\t' read -r ns total compliant mlkem pqc closed; do
         if [[ "$mlkem" -eq "$total" && "$total" -gt 0 ]]; then
             color="$GREEN"
         elif [[ "$mlkem" -gt 0 ]]; then
@@ -127,19 +143,42 @@ require_cmd yq
 operator_count=$(yq '.operators | length' "$OPERATORS_FILE")
 log_info "Checking $operator_count operators from $(basename "$OPERATORS_FILE")..."
 
-echo ""
-echo -e "${BOLD}ML-KEM COMPLIANCE REPORT — TARGET OPERATORS${NC}"
-echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "OPERATOR" "INSTALLED" "TOTAL" "COMPLIANT" "ML-KEM" "PQC READY" "STATUS"
-printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "--------" "---------" "-----" "---------" "------" "---------" "------"
-
 has_failure=false
 CSV_CACHE=$(retry_with_backoff oc get csv -A -o json)
+CONSOLIDATED_ROWS='[]'
+
+append_operator_row() {
+    CONSOLIDATED_ROWS=$(jq -c \
+        --arg name "$1" \
+        --arg installed "$2" \
+        --arg total "$3" \
+        --arg compliant "$4" \
+        --arg mlkem "$5" \
+        --arg pqc_ready "$6" \
+        --arg status "$7" \
+        '. + [{
+            name: $name,
+            installed: $installed,
+            total: (if ($total | test("^-?[0-9]+$")) then ($total | tonumber) else $total end),
+            compliant: (if ($compliant | test("^-?[0-9]+$")) then ($compliant | tonumber) else $compliant end),
+            mlkem: (if ($mlkem | test("^-?[0-9]+$")) then ($mlkem | tonumber) else $mlkem end),
+            pqc_ready: (if ($pqc_ready | test("^-?[0-9]+$")) then ($pqc_ready | tonumber) else $pqc_ready end),
+            status: $status
+        }]' <<< "$CONSOLIDATED_ROWS")
+}
 
 declare -a NS_FILTERS=()
 for i in $(seq 0 $((operator_count - 1))); do
     NS_FILTERS+=("$(build_ns_filter "$OPERATORS_FILE" "$i")")
 done
+
+if [[ -z "$OUTPUT_FORMAT" ]]; then
+    echo ""
+    echo -e "${BOLD}ML-KEM COMPLIANCE REPORT — TARGET OPERATORS${NC}"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "OPERATOR" "INSTALLED" "TOTAL" "COMPLIANT" "ML-KEM" "PQC READY" "STATUS"
+    printf "%-35s %-12s %6s %10s %8s %10s %7s\n" "--------" "---------" "-----" "---------" "------" "---------" "------"
+fi
 
 for i in $(seq 0 $((operator_count - 1))); do
     op_name=$(yq -r ".operators[$i].name" "$OPERATORS_FILE")
@@ -152,8 +191,11 @@ for i in $(seq 0 $((operator_count - 1))); do
         | length')
 
     if [[ "$csv_match" -eq 0 ]]; then
-        printf "${YELLOW}%-35s %-12s %6s %10s %8s %10s %7s${NC}\n" \
-            "$op_name" "NO" "-" "-" "-" "-" "N/A"
+        append_operator_row "$op_name" "NO" "-" "-" "-" "-" "N/A"
+        if [[ -z "$OUTPUT_FORMAT" ]]; then
+            printf "${YELLOW}%-35s %-12s %6s %10s %8s %10s %7s${NC}\n" \
+                "$op_name" "NO" "-" "-" "-" "-" "N/A"
+        fi
         continue
     fi
 
@@ -198,9 +240,23 @@ for i in $(seq 0 $((operator_count - 1))); do
             ;;
     esac
 
-    printf "${color}%-35s %-12s %6s %10s %8s %10s %7s${NC}\n" \
-        "$op_name" "YES" "$total" "$compliant" "$mlkem" "$pqc" "$status"
+    append_operator_row "$op_name" "YES" "$total" "$compliant" "$mlkem" "$pqc" "$status"
+    if [[ -z "$OUTPUT_FORMAT" ]]; then
+        printf "${color}%-35s %-12s %6s %10s %8s %10s %7s${NC}\n" \
+            "$op_name" "YES" "$total" "$compliant" "$mlkem" "$pqc" "$status"
+    fi
 done
+
+if [[ -n "$OUTPUT_FORMAT" ]]; then
+    emit_consolidated_output "$OUTPUT_FORMAT" "operators" \
+        "name installed total compliant mlkem pqc_ready status" \
+        "operator installed total compliant mlkem pqc_ready status" \
+        "$CONSOLIDATED_ROWS"
+    if [[ "$has_failure" == "true" ]]; then
+        exit 1
+    fi
+    exit 0
+fi
 
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
