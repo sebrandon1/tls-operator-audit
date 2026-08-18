@@ -92,10 +92,10 @@ EOF
 
 ## Step 8: Verify
 
-Run a targeted scan to verify the operator installs and scans correctly:
+Run a targeted scan and export:
 
 ```bash
-bash tls-test-all.sh --kubeconfig <path> --only <name> --skip-teardown
+bash scan-and-export.sh --kubeconfig <path> --only <name>
 ```
 
-Then export and commit.
+Then commit the dashboard data files listed in `/scan-operators`.

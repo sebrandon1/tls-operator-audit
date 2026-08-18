@@ -16,7 +16,7 @@ Determine the kubeconfig path (check `$KUBECONFIG`, then `~/Downloads/*kubeconfi
 bash scan-and-export.sh --kubeconfig <path>
 ```
 
-Use `--only <name>` for a single operator, `--skip-scan` to re-export without scanning, `--verbose` for debug output.
+Use `--only <name>` for a single operator, `--skip-scan` to re-export without scanning, `--verbose` for debug output. `--dry-run` previews without changing the cluster. `--update-jira` comments on tracking tickets.
 
 ## After
 
