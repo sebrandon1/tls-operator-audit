@@ -55,6 +55,17 @@ Deploys a scoped run-once scan Job for a specific operator. Produces JSON, Markd
 ./tls-audit.sh --list-operators --kubeconfig ~/kubeconfig
 ```
 
+### `compare-scans.sh` — Diff ML-KEM support between two runs
+
+Compare timestamped result trees and report endpoints that gained or lost ML-KEM support. Exits 1 if any endpoint lost ML-KEM.
+
+```bash
+./compare-scans.sh 20260801-120000 20260810-150000
+
+# Machine-readable diff
+./compare-scans.sh 20260801-120000 20260810-150000 --output-format json
+```
+
 ### `export-dashboard.sh` — Generate dashboard data from local results
 
 Reads the `results/` directory and generates the JSON data files, badge, and operator pages for the GitHub Pages dashboard.

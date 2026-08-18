@@ -1,0 +1,35 @@
+[
+  {
+    "spec": {
+      "host": "webhook.example",
+      "port": 443,
+      "sourceNamespace": "op-a"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true
+    }
+  },
+  {
+    "spec": {
+      "host": "metrics.example",
+      "port": 8443,
+      "sourceNamespace": "op-a"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": false
+    }
+  },
+  {
+    "spec": {
+      "host": "new.example",
+      "port": 443,
+      "sourceNamespace": "op-a"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true
+    }
+  }
+]
