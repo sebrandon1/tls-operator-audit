@@ -20,6 +20,7 @@ Options:
   --exclude <name>        Exclude operator(s) from scanning (repeatable)
   --skip-scan             Skip scanning, just re-export from existing results
   --skip-teardown         Leave operators installed after scanning (default: true)
+  --dry-run               Preview scan actions without changing the cluster or dashboard
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -32,6 +33,7 @@ ONLY_OPERATOR=""
 EXCLUDE_OPERATORS=()
 SKIP_SCAN=false
 SKIP_TEARDOWN=true
+DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -41,6 +43,7 @@ while [[ $# -gt 0 ]]; do
         --exclude)        require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
         --skip-scan)      SKIP_SCAN=true; shift ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
+        --dry-run)        DRY_RUN=true; shift ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
@@ -58,15 +61,22 @@ start_timer
 # Gather cluster info
 # ============================================================================
 log_info "Gathering cluster info..."
-precheck_tco
+if [[ "$DRY_RUN" != "true" ]]; then
+    precheck_tco
+    TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
+else
+    log_info "Dry run: skipping tls-compliance-operator precheck"
+    TCO_VERSION=""
+fi
 
 OCP_VERSION=$(oc version -o json 2>/dev/null | jq -r '.openshiftVersion // "unknown"')
-TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
 CLUSTER=$(oc whoami --show-server 2>/dev/null | sed 's|https://api\.||;s|\..*||')
 
 log_info "Cluster: $CLUSTER"
 log_info "OCP: $OCP_VERSION"
-log_info "TCO: $TCO_VERSION"
+if [[ -n "$TCO_VERSION" ]]; then
+    log_info "TCO: $TCO_VERSION"
+fi
 
 # ============================================================================
 # Step 1: Scan
@@ -83,6 +93,9 @@ if [[ "$SKIP_SCAN" == "false" ]]; then
     for excluded in "${EXCLUDE_OPERATORS[@]}"; do
         scan_args+=(--exclude "$excluded")
     done
+    if [[ "$DRY_RUN" == "true" ]]; then
+        scan_args+=(--dry-run)
+    fi
     if [[ "${LOG_LEVEL:-3}" -ge 4 ]]; then
         scan_args+=(--verbose)
     fi
@@ -90,6 +103,12 @@ if [[ "$SKIP_SCAN" == "false" ]]; then
     bash "$SCRIPT_DIR/tls-test-all.sh" "${scan_args[@]}"
 else
     log_info "Skipping scan (--skip-scan), using existing results"
+fi
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    log_info "Dry run: skipping dashboard export and index version check"
+    print_duration
+    exit 0
 fi
 
 # ============================================================================

@@ -22,6 +22,7 @@ Options:
   --exclude <name>        Exclude operator(s) from testing (repeatable)
   --skip-teardown         Leave operators installed after scanning
   --scan-wait <seconds>   Time to wait for endpoint discovery (default: 90)
+  --dry-run               Preview install/scan/teardown without changing the cluster
   --verbose               Enable debug output
   --quiet                 Suppress all output except errors
   -h, --help              Show this help
@@ -34,6 +35,7 @@ ONLY_OPERATOR=""
 EXCLUDE_OPERATORS=()
 SKIP_TEARDOWN=false
 SCAN_WAIT=90
+DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -43,6 +45,7 @@ while [[ $# -gt 0 ]]; do
         --exclude)        require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
+        --dry-run)        DRY_RUN=true; shift ;;
         --verbose)        export LOG_LEVEL=4; shift ;;
         --quiet)          export LOG_LEVEL=0; shift ;;
         -h|--help)        usage; exit 0 ;;
@@ -62,7 +65,6 @@ require_cluster
 log_success "Connected to $(oc whoami --show-server 2>/dev/null || echo 'cluster')"
 
 start_timer
-precheck_tco
 
 operator_count=$(yq '.operators | length' "$OPERATORS_FILE")
 RESULTS_BASE="$SCRIPT_DIR/results"
@@ -78,12 +80,64 @@ if [[ -n "$ONLY_OPERATOR" ]]; then
     fi
 fi
 
+if [[ "$DRY_RUN" != "true" ]]; then
+    precheck_tco
+    TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
+else
+    log_info "Dry run: skipping tls-compliance-operator precheck"
+    TCO_VERSION=""
+fi
+
 CSV_CACHE=$(retry_with_backoff oc get csv -A -o json)
 OCP_VERSION=$(retry_with_backoff oc version -o json | jq -r '.openshiftVersion // "unknown"')
-TCO_VERSION=$(echo "$TCO_IMAGE" | sed 's/.*://')
 
 log_info "OCP version: $OCP_VERSION"
-log_info "tls-compliance-operator: $TCO_VERSION"
+if [[ -n "$TCO_VERSION" ]]; then
+    log_info "tls-compliance-operator: $TCO_VERSION"
+fi
+
+print_dry_run_plan() {
+    echo ""
+    echo -e "${BOLD}DRY RUN — no cluster changes${NC}"
+    echo ""
+    printf "  %-4s %-40s %-10s %s\n" "#" "Operator" "Installed" "Action"
+    printf "  %-4s %-40s %-10s %s\n" "--" "--------" "---------" "------"
+
+    local row=0
+    local i op_name op_catalog installed action skip excluded
+    for i in $(seq 0 $((operator_count - 1))); do
+        op_name=$(yq -r ".operators[$i].name" "$OPERATORS_FILE")
+        op_catalog=$(yq -r ".operators[$i].catalog" "$OPERATORS_FILE")
+
+        if [[ -n "$ONLY_OPERATOR" && "$op_name" != "$ONLY_OPERATOR" ]]; then
+            continue
+        fi
+
+        row=$((row + 1))
+        skip=false
+        for excluded in "${EXCLUDE_OPERATORS[@]}"; do
+            if [[ "$op_name" == "$excluded" ]]; then
+                skip=true
+                break
+            fi
+        done
+
+        if [[ "$skip" == "true" ]]; then
+            printf "  %-4s %-40s %-10s %s\n" "$row" "$op_name" "-" "SKIP (--exclude)"
+            continue
+        fi
+
+        IFS=$'\t' read -r installed action < <(plan_operator_action "$op_name" "$op_catalog" "$CSV_CACHE" "$SKIP_TEARDOWN")
+        printf "  %-4s %-40s %-10s %s\n" "$row" "$op_name" "$installed" "$action"
+    done
+    echo ""
+}
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    print_dry_run_plan
+    print_duration
+    exit 0
+fi
 
 # Collect summary data for final table
 declare -a SUMMARY_NAMES=()

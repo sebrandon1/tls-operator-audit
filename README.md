@@ -33,6 +33,9 @@ Iterates through `operators.yaml`, installing each operator one at a time, waiti
 
 # Keep operators installed after scanning
 ./tls-test-all.sh --kubeconfig ~/kubeconfig --skip-teardown
+
+# Preview install/scan/teardown without changing the cluster
+./tls-test-all.sh --kubeconfig ~/kubeconfig --dry-run
 ```
 
 ### `tls-mlkem-report.sh` — Quick report from existing data
