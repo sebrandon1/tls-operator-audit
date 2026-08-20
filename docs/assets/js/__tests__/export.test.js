@@ -14,6 +14,20 @@ const exportJs = fs.readFileSync(
 // eslint-disable-next-line no-eval
 eval(exportJs);
 
+const originalDownloadBlob = downloadBlob;
+const originalDownloadJSON = downloadJSON;
+const originalDownloadCSV = downloadCSV;
+
+function restoreExportFns() {
+  downloadBlob = originalDownloadBlob;
+  downloadJSON = originalDownloadJSON;
+  downloadCSV = originalDownloadCSV;
+}
+
+afterEach(() => {
+  restoreExportFns();
+});
+
 describe('csvEscape', () => {
   test('returns empty string for null', () => {
     expect(csvEscape(null)).toBe('');
@@ -160,7 +174,7 @@ describe('downloadJSON', () => {
 
   beforeEach(() => {
     mockDownloadBlob = jest.fn();
-    global.downloadBlob = mockDownloadBlob;
+    downloadBlob = mockDownloadBlob;
   });
 
   test('creates JSON blob with formatted content', () => {
@@ -181,7 +195,12 @@ describe('downloadJSON', () => {
     downloadJSON('test.json', data);
 
     const blob = mockDownloadBlob.mock.calls[0][1];
-    const text = await blob.text();
+    const text = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsText(blob);
+    });
     expect(text).toBe(JSON.stringify(data, null, 2));
   });
 });
@@ -191,7 +210,7 @@ describe('downloadCSV', () => {
 
   beforeEach(() => {
     mockDownloadBlob = jest.fn();
-    global.downloadBlob = mockDownloadBlob;
+    downloadBlob = mockDownloadBlob;
   });
 
   test('creates CSV blob with correct content type', () => {
@@ -214,7 +233,7 @@ describe('exportOperatorsJSON', () => {
 
   beforeEach(() => {
     mockDownloadJSON = jest.fn();
-    global.downloadJSON = mockDownloadJSON;
+    downloadJSON = mockDownloadJSON;
     mockAlert = jest.fn();
     global.alert = mockAlert;
   });
@@ -258,16 +277,16 @@ describe('exportOperatorsCSV', () => {
 
   beforeEach(() => {
     mockDownloadCSV = jest.fn();
-    global.downloadCSV = mockDownloadCSV;
+    downloadCSV = mockDownloadCSV;
     mockAlert = jest.fn();
     global.alert = mockAlert;
   });
 
-  test('alerts when no operator data available', () => {
+  test('alerts when no scan data available', () => {
     window.scanData = null;
     exportOperatorsCSV();
 
-    expect(mockAlert).toHaveBeenCalledWith('No operator data available');
+    expect(mockAlert).toHaveBeenCalledWith('No scan data available');
     expect(mockDownloadCSV).not.toHaveBeenCalled();
   });
 
@@ -315,7 +334,7 @@ describe('exportOperatorsCSV', () => {
     exportOperatorsCSV();
 
     const csv = mockDownloadCSV.mock.calls[0][1];
-    expect(csv).toContain('minimal-op,,,,,,0,0,0,0,0,');
+    expect(csv).toContain('minimal-op,,,,,0,0,0,0,0,');
   });
 
   test('escapes CSV special characters in operator fields', () => {
@@ -351,7 +370,7 @@ describe('exportOperatorJSON', () => {
 
   beforeEach(() => {
     mockDownloadJSON = jest.fn();
-    global.downloadJSON = mockDownloadJSON;
+    downloadJSON = mockDownloadJSON;
     mockAlert = jest.fn();
     global.alert = mockAlert;
   });
@@ -401,7 +420,7 @@ describe('exportOperatorCSV', () => {
 
   beforeEach(() => {
     mockDownloadCSV = jest.fn();
-    global.downloadCSV = mockDownloadCSV;
+    downloadCSV = mockDownloadCSV;
     mockAlert = jest.fn();
     global.alert = mockAlert;
   });
