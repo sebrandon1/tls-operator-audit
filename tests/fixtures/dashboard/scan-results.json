@@ -1,0 +1,39 @@
+{
+  "scan_date": "2026-08-18T12:00:00Z",
+  "cluster": "test-cluster",
+  "ocp_version": "4.19.0",
+  "tco_version": "v1.1.9",
+  "summary": {
+    "total_operators": 3,
+    "pass": 1,
+    "partial": 1,
+    "none": 0,
+    "error": 1,
+    "total_endpoints": 10,
+    "mlkem_endpoints": 7,
+    "mlkem_percent": 70.0
+  },
+  "operators": [
+    {
+      "name": "pass-op",
+      "version": "1.2.0",
+      "status": "PASS",
+      "mlkem_endpoints": 4,
+      "reachable_endpoints": 4
+    },
+    {
+      "name": "partial-op",
+      "version": "2.0.0",
+      "status": "PARTIAL",
+      "mlkem_endpoints": 3,
+      "reachable_endpoints": 6
+    },
+    {
+      "name": "fail-op",
+      "version": "",
+      "status": "ERROR",
+      "mlkem_endpoints": 0,
+      "reachable_endpoints": 0
+    }
+  ]
+}

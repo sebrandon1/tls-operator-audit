@@ -1,0 +1,12 @@
+{
+  "scan_date": "2026-08-18T12:00:00Z",
+  "cluster": "test-cluster",
+  "ocp_version": "4.19.0",
+  "operators": [
+    {"name": "current-op", "version": "1.0.0"},
+    {"name": "stale-op", "version": "1.5.0"},
+    {"name": "certified-op", "version": "3.0.0"},
+    {"name": "community-op", "version": "0.1.0"},
+    {"name": "preinstalled-op", "version": "1.8.0"}
+  ]
+}
