@@ -98,8 +98,10 @@ test_summary_and_operator_status() {
     assert_eq "PASS count" "1" "$(jq_field '.summary.pass' "$results")"
     assert_eq "PARTIAL count" "1" "$(jq_field '.summary.partial' "$results")"
     assert_eq "NONE count" "1" "$(jq_field '.summary.none' "$results")"
-    assert_eq "ERROR count includes FAIL and missing reports" "2" \
+    assert_eq "ERROR count is FAIL only, not catalog-null skips" "1" \
         "$(jq_field '.summary.error' "$results")"
+    assert_eq "N/A count is catalog-null without a report" "1" \
+        "$(jq_field '.summary.na' "$results")"
     assert_eq "reachable endpoint total" "6" "$(jq_field '.summary.total_endpoints' "$results")"
     assert_eq "ML-KEM endpoint total" "3" "$(jq_field '.summary.mlkem_endpoints' "$results")"
     assert_eq "overall ML-KEM percent" "50.0" "$(jq_field '.summary.mlkem_percent' "$results")"
@@ -112,7 +114,7 @@ test_summary_and_operator_status() {
         "$(jq -r '.operators[] | select(.name=="none-op") | .status' "$results")"
     assert_eq "fail-op status" "FAIL" \
         "$(jq -r '.operators[] | select(.name=="fail-op") | .status' "$results")"
-    assert_eq "missing-op status" "ERROR" \
+    assert_eq "missing-op status is N/A not ERROR" "N/A" \
         "$(jq -r '.operators[] | select(.name=="missing-op") | .status' "$results")"
 }
 
@@ -148,6 +150,33 @@ test_catalog_null_is_preinstalled() {
         "$(jq -r '.operators[] | select(.name=="missing-op") | .jira' "$results")"
     assert_eq "project is copied from operators.yaml" "Missing Operator" \
         "$(jq -r '.operators[] | select(.name=="missing-op") | .project' "$results")"
+}
+
+test_catalogued_missing_report_is_error() {
+    local dir results
+    dir=$(setup_workdir catalogued-missing)
+    cat > "$dir/operators.yaml" <<'EOF'
+operators:
+  - name: unscanned-op
+    jira: TEST-9
+    project: Unscanned Operator
+    catalog: redhat-operators
+    channel: stable
+EOF
+
+    bash "$dir/export-dashboard.sh" \
+        --results-dir "$FIXTURES/results" \
+        --cluster test-cluster \
+        --ocp-version 4.19.0 \
+        --quiet >/dev/null
+    results="$dir/docs/_data/scan-results.json"
+
+    assert_eq "missing report with a real catalog is ERROR" "ERROR" \
+        "$(jq -r '.operators[] | select(.name=="unscanned-op") | .status' "$results")"
+    assert_eq "ERROR count for catalogued missing report" "1" \
+        "$(jq_field '.summary.error' "$results")"
+    assert_eq "N/A count is zero when catalog is set" "0" \
+        "$(jq_field '.summary.na' "$results")"
 }
 
 test_endpoint_schema_mapping() {
@@ -281,6 +310,7 @@ test_writes_valid_scan_results
 test_summary_and_operator_status
 test_uses_latest_report_and_metadata
 test_catalog_null_is_preinstalled
+test_catalogued_missing_report_is_error
 test_endpoint_schema_mapping
 test_history_append_and_dedup
 test_scan_settings_in_history
