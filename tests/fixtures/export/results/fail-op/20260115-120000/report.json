@@ -1,0 +1,24 @@
+[
+  {
+    "spec": {
+      "host": "a.fail.example",
+      "port": 443,
+      "sourceNamespace": "fail-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": false
+    }
+  },
+  {
+    "spec": {
+      "host": "b.fail.example",
+      "port": 8443,
+      "sourceNamespace": "fail-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": false
+    }
+  }
+]
