@@ -1,0 +1,81 @@
+[
+  {
+    "spec": {
+      "host": "webhook.pass.example",
+      "port": 443,
+      "sourceKind": "Service",
+      "sourceName": "pass-webhook",
+      "sourceNamespace": "pass-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true,
+      "pqcReadiness": "PQCReady",
+      "overallCipherGrade": "A",
+      "forwardSecrecy": true,
+      "tlsVersions": {
+        "tls12": true,
+        "tls13": true
+      },
+      "cipherSuites": {
+        "TLS 1.3": ["TLS_AES_128_GCM_SHA256"]
+      },
+      "certificateInfo": {
+        "issuer": "CN=pass-ca",
+        "subject": "CN=webhook.pass.example",
+        "daysUntilExpiry": 90,
+        "publicKeyAlgorithm": "RSA",
+        "publicKeyBits": 2048,
+        "signatureAlgorithm": "SHA256-RSA",
+        "hostnameMatch": true
+      }
+    },
+    "workload": {
+      "pods": [
+        {
+          "name": "pass-webhook-abc",
+          "containers": [
+            {
+              "name": "webhook",
+              "image": "quay.io/org/pass-op",
+              "tag": "v1.2.0",
+              "digest": "sha256:abc"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "spec": {
+      "host": "metrics.pass.example",
+      "port": 8443,
+      "sourceKind": "Pod",
+      "sourceName": "pass-metrics",
+      "sourceNamespace": "pass-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true,
+      "pqcReadiness": "PQCReady",
+      "overallCipherGrade": "A",
+      "forwardSecrecy": true,
+      "certificateInfo": {
+        "daysUntilExpiry": 30
+      }
+    }
+  },
+  {
+    "spec": {
+      "host": "closed.pass.example",
+      "port": 443,
+      "sourceKind": "Service",
+      "sourceName": "pass-closed",
+      "sourceNamespace": "pass-op"
+    },
+    "status": {
+      "complianceStatus": "Closed",
+      "mlkemSupported": false
+    }
+  }
+]

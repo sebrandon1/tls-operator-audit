@@ -1,0 +1,22 @@
+[
+  {
+    "spec": {
+      "host": "closed.none.example",
+      "port": 443,
+      "sourceNamespace": "none-op"
+    },
+    "status": {
+      "complianceStatus": "Closed"
+    }
+  },
+  {
+    "spec": {
+      "host": "timeout.none.example",
+      "port": 8443,
+      "sourceNamespace": "none-op"
+    },
+    "status": {
+      "complianceStatus": "Timeout"
+    }
+  }
+]

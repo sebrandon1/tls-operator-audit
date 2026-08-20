@@ -1,0 +1,37 @@
+# Fixture operators for export-dashboard.sh unit tests
+operators:
+  - name: pass-op
+    jira: TEST-1
+    project: Pass Operator
+    catalog: redhat-operators
+    channel: stable
+    namespaces:
+      - pass-op
+  - name: partial-op
+    jira: TEST-2
+    project: Partial Operator
+    catalog: redhat-operators
+    channel: stable
+    namespaces:
+      - partial-op
+  - name: none-op
+    jira: TEST-3
+    project: None Operator
+    catalog: redhat-operators
+    channel: stable
+    namespaces:
+      - none-op
+  - name: fail-op
+    jira: TEST-4
+    project: Fail Operator
+    catalog: certified-operators
+    channel: stable
+    namespaces:
+      - fail-op
+  - name: missing-op
+    jira: TEST-5
+    project: Missing Operator
+    catalog: null
+    channel: null
+    namespaces:
+      - missing-op

@@ -1,0 +1,30 @@
+[
+  {
+    "spec": {
+      "host": "mlkem.partial.example",
+      "port": 443,
+      "sourceKind": "Service",
+      "sourceName": "partial-mlkem",
+      "sourceNamespace": "partial-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true,
+      "pqcReadiness": "PQCReady"
+    }
+  },
+  {
+    "spec": {
+      "host": "legacy.partial.example",
+      "port": 8443,
+      "sourceKind": "Pod",
+      "sourceName": "partial-legacy",
+      "sourceNamespace": "partial-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": false,
+      "pqcReadiness": "NotReady"
+    }
+  }
+]

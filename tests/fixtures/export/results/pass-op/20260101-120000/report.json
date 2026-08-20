@@ -1,0 +1,15 @@
+[
+  {
+    "spec": {
+      "host": "old.pass.example",
+      "port": 443,
+      "sourceKind": "Pod",
+      "sourceName": "old-pod",
+      "sourceNamespace": "pass-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": false
+    }
+  }
+]
