@@ -11,3 +11,8 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - vendor
+  - node_modules
+  - coverage
+  - package.json
+  - package-lock.json
+  - assets/js/__tests__
