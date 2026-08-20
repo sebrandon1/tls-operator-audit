@@ -37,5 +37,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install yq
+        uses: mikefarah/yq@v4
+
       - name: Run Tests
         run: bash tests/run_tests.sh

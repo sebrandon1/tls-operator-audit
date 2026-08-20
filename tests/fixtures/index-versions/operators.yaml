@@ -1,0 +1,22 @@
+operators:
+  - name: current-op
+    catalog: redhat-operators
+    channel: stable
+  - name: stale-op
+    catalog: redhat-operators
+    channel: stable
+  - name: missing-pkg
+    catalog: redhat-operators
+    channel: stable
+  - name: preinstalled-op
+    catalog: null
+    channel: null
+  - name: certified-op
+    catalog: certified-operators
+    channel: stable
+  - name: community-op
+    catalog: community-operators
+    channel: alpha
+  - name: custom-op
+    catalog: custom-catalog
+    channel: stable

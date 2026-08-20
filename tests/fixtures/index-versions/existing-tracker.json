@@ -1,0 +1,9 @@
+{
+  "checked": "2026-01-01T00:00:00Z",
+  "operators": [
+    {
+      "name": "stale-op",
+      "index_version": "1.9.0"
+    }
+  ]
+}

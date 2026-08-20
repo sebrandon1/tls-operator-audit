@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Mock oc for check-index-versions.sh unit tests. Not for production use.
+set -euo pipefail
+
+if [[ "${1:-}" == "whoami" ]]; then
+    echo "system:admin"
+    exit 0
+fi
+
+if [[ "${1:-}" == "get" && "${2:-}" == "catalogsource" ]]; then
+    cat <<'EOF'
+{"items":[
+  {"metadata":{"name":"redhat-operators"},"spec":{"image":"registry.redhat.io/redhat/redhat-operator-index:v4.19"}},
+  {"metadata":{"name":"certified-operators"},"spec":{"image":"registry.redhat.io/redhat/certified-operator-index:v4.19"}},
+  {"metadata":{"name":"community-operators"},"spec":{"image":"registry.redhat.io/redhat/community-operator-index:v4.19"}}
+]}
+EOF
+    exit 0
+fi
+
+if [[ "${1:-}" == "get" && "${2:-}" == "packagemanifest" ]]; then
+    name="${3:-}"
+    case "$name" in
+        current-op)
+            cat <<'EOF'
+{"status":{"channels":[{"name":"stable","currentCSVDesc":{"version":"1.0.0"}}]}}
+EOF
+            ;;
+        stale-op)
+            cat <<'EOF'
+{"status":{"channels":[{"name":"stable","currentCSVDesc":{"version":"2.0.0"}}]}}
+EOF
+            ;;
+        certified-op)
+            cat <<'EOF'
+{"status":{"channels":[{"name":"stable","currentCSVDesc":{"version":"3.0.0"}}]}}
+EOF
+            ;;
+        community-op)
+            cat <<'EOF'
+{"status":{"channels":[{"name":"alpha","currentCSVDesc":{"version":"0.1.0"}}]}}
+EOF
+            ;;
+        custom-op)
+            cat <<'EOF'
+{"status":{"channels":[{"name":"stable","currentCSVDesc":{"version":"9.9.9"}}]}}
+EOF
+            ;;
+        *)
+            exit 1
+            ;;
+    esac
+    exit 0
+fi
+
+if [[ "${1:-}" == "get" && "${2:-}" == "csv" ]]; then
+    cat <<'EOF'
+{"items":[
+  {"metadata":{"name":"preinstalled-op.v1.8.2"},"status":{"phase":"Succeeded"},"spec":{"version":"1.8.2"}},
+  {"metadata":{"name":"other-op.v1.0.0"},"status":{"phase":"Failed"},"spec":{"version":"1.0.0"}}
+]}
+EOF
+    exit 0
+fi
+
+echo "unmocked oc invocation: $*" >&2
+exit 1

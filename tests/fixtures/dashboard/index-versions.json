@@ -1,0 +1,23 @@
+{
+  "checked": "2026-08-19T08:00:00Z",
+  "operators": [
+    {
+      "name": "pass-op",
+      "scanned_version": "1.2.0",
+      "index_version": "1.2.0",
+      "update_available": false
+    },
+    {
+      "name": "partial-op",
+      "scanned_version": "2.0.0",
+      "index_version": "2.1.0",
+      "update_available": true
+    },
+    {
+      "name": "fail-op",
+      "scanned_version": "",
+      "index_version": "3.0.0",
+      "update_available": false
+    }
+  ]
+}
