@@ -1017,3 +1017,47 @@ th[data-tooltip] {
     grid-template-columns: 1fr;
   }
 }
+
+/* ML-KEM trend chart */
+.trend-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.trend-chart-card h2 {
+  margin-top: 0;
+}
+
+.trend-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.trend-line {
+  stroke: var(--color-pass);
+  stroke-width: 2;
+}
+
+.trend-dot {
+  fill: var(--color-pass);
+}
+
+.trend-grid {
+  stroke: var(--border-light);
+  stroke-width: 1;
+}
+
+.trend-axis-label {
+  fill: var(--text-secondary);
+  font-size: 11px;
+}
+
+.trend-chart-empty {
+  color: var(--text-secondary);
+  margin: 0;
+}
