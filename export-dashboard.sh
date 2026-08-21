@@ -262,7 +262,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         certificate_info: {
             issuer: (.status.certificateInfo.issuer // ""),
             subject: (.status.certificateInfo.subject // ""),
-            days_until_expiry: (.status.certificateInfo.daysUntilExpiry // 0),
+            days_until_expiry: (.status.certificateInfo.daysUntilExpiry // .status.daysUntilExpiry // 0),
             public_key_algorithm: (.status.certificateInfo.publicKeyAlgorithm // ""),
             public_key_bits: (.status.certificateInfo.publicKeyBits // 0),
             signature_algorithm: (.status.certificateInfo.signatureAlgorithm // ""),

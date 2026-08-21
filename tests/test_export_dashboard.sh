@@ -179,6 +179,68 @@ EOF
         "$(jq_field '.summary.na' "$results")"
 }
 
+test_coalesces_days_until_expiry() {
+    local dir results_dir results
+    dir=$(setup_workdir coalesce-expiry)
+    results_dir="$dir/results/cli-op/20260115-120000"
+    mkdir -p "$results_dir"
+    cat > "$dir/operators.yaml" <<'EOF'
+operators:
+  - name: cli-op
+    jira: TEST-8
+    project: CLI Operator
+    catalog: redhat-operators
+    channel: stable
+EOF
+    cat > "$results_dir/report.json" <<'EOF'
+[
+  {
+    "spec": {
+      "host": "cli.example",
+      "port": 443,
+      "sourceKind": "Service",
+      "sourceName": "cli",
+      "sourceNamespace": "cli-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true,
+      "daysUntilExpiry": 12
+    }
+  },
+  {
+    "spec": {
+      "host": "nested.example",
+      "port": 443,
+      "sourceKind": "Service",
+      "sourceName": "nested",
+      "sourceNamespace": "cli-op"
+    },
+    "status": {
+      "complianceStatus": "Compliant",
+      "mlkemSupported": true,
+      "daysUntilExpiry": 99,
+      "certificateInfo": {
+        "daysUntilExpiry": 45
+      }
+    }
+  }
+]
+EOF
+
+    bash "$dir/export-dashboard.sh" \
+        --results-dir "$dir/results" \
+        --cluster test-cluster \
+        --ocp-version 4.19.0 \
+        --quiet >/dev/null
+    results="$dir/docs/_data/scan-results.json"
+
+    assert_eq "top-level daysUntilExpiry used when nested field is missing" "12" \
+        "$(jq -r '.operators[] | select(.name=="cli-op") | .endpoints[] | select(.host=="cli.example") | .certificate_info.days_until_expiry' "$results")"
+    assert_eq "nested certificateInfo.daysUntilExpiry wins when both are set" "45" \
+        "$(jq -r '.operators[] | select(.name=="cli-op") | .endpoints[] | select(.host=="nested.example") | .certificate_info.days_until_expiry' "$results")"
+}
+
 test_endpoint_schema_mapping() {
     local dir results endpoint
     dir=$(setup_workdir endpoints)
@@ -311,6 +373,7 @@ test_summary_and_operator_status
 test_uses_latest_report_and_metadata
 test_catalog_null_is_preinstalled
 test_catalogued_missing_report_is_error
+test_coalesces_days_until_expiry
 test_endpoint_schema_mapping
 test_history_append_and_dedup
 test_scan_settings_in_history

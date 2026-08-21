@@ -121,12 +121,16 @@ fi
 # Step 2: Export dashboard
 # ============================================================================
 log_info "Exporting dashboard data..."
+SCAN_MODE="all-operators"
+if [[ -n "$ONLY_OPERATOR" ]]; then
+    SCAN_MODE="single-operator"
+fi
 export_args=(
     --results-dir "$SCRIPT_DIR/results"
     --cluster "$CLUSTER"
     --ocp-version "$OCP_VERSION"
     --tco-version "$TCO_VERSION"
-    --scan-mode "all-operators"
+    --scan-mode "$SCAN_MODE"
     --scan-kubeconfig "$KUBECONFIG"
 )
 if [[ -n "$ONLY_OPERATOR" ]]; then
