@@ -7,6 +7,15 @@ title: "Scan History"
 
 {% assign history = site.data.scan-history %}
 
+<script>
+window.historyData = [{% for scan in history %}{"scan_date":{{ scan.scan_date | jsonify }},"label":{{ scan.scan_date | date: "%Y-%m-%d %H:%M" | jsonify }},"mlkem_percent":{{ scan.summary.mlkem_percent | jsonify }}}{% unless forloop.last %},{% endunless %}{% endfor %}];
+</script>
+
+<div class="trend-chart-card">
+  <h2>ML-KEM Trend</h2>
+  <div id="mlkem-trend-chart"></div>
+</div>
+
 {% if history.size > 0 %}
 <div class="filter-bar">
   <select id="ocp-filter" class="filter-select" onchange="filterHistoryTable()" aria-label="Filter by OCP version">
@@ -131,3 +140,4 @@ title: "Scan History"
 {% endif %}
 
 <script src="{{ '/assets/js/history-filters.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/history-chart.js' | relative_url }}"></script>
