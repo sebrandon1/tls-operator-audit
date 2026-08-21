@@ -41,6 +41,31 @@ test_scan_and_export_forwards_dry_run() {
         "skipping dashboard export and index version check"
 }
 
+test_scan_and_export_only_uses_single_operator_mode() {
+    assert_contains "scan-and-export.sh defaults scan mode to all-operators" \
+        "$SCAN_AND_EXPORT_CONTENT" \
+        'SCAN_MODE="all-operators"'
+
+    assert_contains "scan-and-export.sh records --only as single-operator mode" \
+        "$SCAN_AND_EXPORT_CONTENT" \
+        'SCAN_MODE="single-operator"'
+
+    assert_contains "scan-and-export.sh passes SCAN_MODE to export-dashboard.sh" \
+        "$SCAN_AND_EXPORT_CONTENT" \
+        '--scan-mode "$SCAN_MODE"'
+
+    local default_line only_line
+    default_line=$(grep -n 'SCAN_MODE="all-operators"' "$SCAN_AND_EXPORT" | head -1 | cut -d: -f1)
+    only_line=$(grep -n 'SCAN_MODE="single-operator"' "$SCAN_AND_EXPORT" | head -1 | cut -d: -f1)
+    if [[ "$default_line" -lt "$only_line" ]]; then
+        echo "  PASS: --only overrides the default all-operators scan mode"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: single-operator mode should be set after the all-operators default"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 test_dry_run_skips_tco_precheck() {
     assert_contains "tls-test-all.sh skips precheck_tco on dry-run" \
         "$TLS_TEST_ALL_CONTENT" \
@@ -108,6 +133,7 @@ test_help_accepts_dry_run() {
 
 test_tls_test_all_documents_dry_run
 test_scan_and_export_forwards_dry_run
+test_scan_and_export_only_uses_single_operator_mode
 test_dry_run_skips_tco_precheck
 test_dry_run_exits_before_mutations
 test_plan_scan_in_place
