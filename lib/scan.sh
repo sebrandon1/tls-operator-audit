@@ -6,6 +6,36 @@ SA_NAME="tco-scanner"
 ROLE_NAME="tco-audit-scanner-role"
 BINDING_NAME="tco-audit-scanner-binding"
 
+# Unique DNS-1123 suffix for this scan (target namespace + pid).
+# Args: target_namespace [pid]
+scan_resource_id() {
+    local target_namespace="$1"
+    local pid="${2:-$$}"
+    local ns_slug
+    ns_slug=$(printf '%s' "$target_namespace" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/--*/-/g;s/^-//;s/-$//')
+    if [[ -z "$ns_slug" ]]; then
+        ns_slug="ns"
+    fi
+    ns_slug="${ns_slug:0:20}"
+    ns_slug="${ns_slug#-}"
+    ns_slug="${ns_slug%-}"
+    if [[ -z "$ns_slug" ]]; then
+        ns_slug="ns"
+    fi
+    printf '%s-%s' "$ns_slug" "$pid"
+}
+
+# Set Job, namespace, and cluster RBAC names for this run.
+# Args: target_namespace [pid]
+init_scan_resource_names() {
+    local scan_id
+    scan_id=$(scan_resource_id "$@")
+    SCAN_NAMESPACE="tls-audit-${scan_id}"
+    JOB_NAME="tls-audit-scan-${scan_id}"
+    ROLE_NAME="tco-audit-role-${scan_id}"
+    BINDING_NAME="tco-audit-bind-${scan_id}"
+}
+
 scan_cleanup() {
     log_info "Cleaning up scan resources..."
     oc delete job "${JOB_NAME}" -n "${SCAN_NAMESPACE}" --ignore-not-found=true 2>/dev/null || true
@@ -32,6 +62,8 @@ run_scan() {
     local target_namespace="$1"
     local results_dir="$2"
     local image="$3"
+
+    init_scan_resource_names "$target_namespace"
 
     _SCAN_PREV_EXIT_TRAP=$(trap -p EXIT || true)
     _SCAN_PREV_INT_TRAP=$(trap -p INT || true)
