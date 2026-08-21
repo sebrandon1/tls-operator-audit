@@ -168,6 +168,7 @@ summary_pass=0
 summary_partial=0
 summary_none=0
 summary_error=0
+summary_na=0
 total_endpoints_all=0
 mlkem_endpoints_all=0
 latest_mtime=0
@@ -177,12 +178,16 @@ operators_json="[]"
 
 for i in $(seq 0 $((operator_count - 1))); do
     op_name=$(yq -r ".operators[$i].name" "$OPERATORS_YAML")
-    op_catalog=$(yq -r ".operators[$i].catalog // \"pre-installed\"" "$OPERATORS_YAML")
+    op_catalog_raw=$(yq -r ".operators[$i].catalog" "$OPERATORS_YAML")
     op_jira=$(yq -r ".operators[$i].jira // \"\"" "$OPERATORS_YAML")
     op_project=$(yq -r ".operators[$i].project // \"$op_name\"" "$OPERATORS_YAML")
 
-    if [[ "$op_catalog" == "null" ]]; then
+    catalog_skipped=false
+    if [[ "$op_catalog_raw" == "null" || -z "$op_catalog_raw" ]]; then
+        catalog_skipped=true
         op_catalog="pre-installed"
+    else
+        op_catalog="$op_catalog_raw"
     fi
 
     log_debug "Processing operator: $op_name"
@@ -192,14 +197,22 @@ for i in $(seq 0 $((operator_count - 1))); do
     latest_report=$(find "$RESULTS_DIR/$op_name" -name "report.json" -type f 2>/dev/null | sort | tail -1 || true)
 
     if [[ -z "$latest_report" || ! -f "$latest_report" ]]; then
-        log_warn "No report.json found for $op_name"
+        if [[ "$catalog_skipped" == "true" ]]; then
+            op_status="N/A"
+            summary_na=$((summary_na + 1))
+            log_info "No report.json for $op_name (catalog skipped), recording N/A"
+        else
+            op_status="ERROR"
+            summary_error=$((summary_error + 1))
+            log_warn "No report.json found for $op_name"
+        fi
 
         op_json=$(jq -n \
             --arg name "$op_name" \
             --arg catalog "$op_catalog" \
             --arg jira "$op_jira" \
             --arg project "$op_project" \
-            --arg status "ERROR" \
+            --arg status "$op_status" \
             --arg version "" \
             '{
                 name: $name,
@@ -216,7 +229,6 @@ for i in $(seq 0 $((operator_count - 1))); do
             }')
 
         operators_json=$(echo "$operators_json" | jq --argjson op "$op_json" '. + [$op]')
-        summary_error=$((summary_error + 1))
         continue
     fi
 
@@ -345,7 +357,7 @@ fi
 # ============================================================================
 # Build and write scan-results.json
 # ============================================================================
-total_operators=$((summary_pass + summary_partial + summary_none + summary_error))
+total_operators=$((summary_pass + summary_partial + summary_none + summary_error + summary_na))
 
 scan_results=$(jq -n \
     --arg scan_date "$scan_date" \
@@ -357,6 +369,7 @@ scan_results=$(jq -n \
     --argjson partial "$summary_partial" \
     --argjson none "$summary_none" \
     --argjson error "$summary_error" \
+    --argjson na "$summary_na" \
     --argjson total_endpoints "$total_endpoints_all" \
     --argjson mlkem_endpoints "$mlkem_endpoints_all" \
     --argjson mlkem_percent "$mlkem_percent" \
@@ -372,6 +385,7 @@ scan_results=$(jq -n \
             partial: $partial,
             none: $none,
             error: $error,
+            na: $na,
             total_endpoints: $total_endpoints,
             mlkem_endpoints: $mlkem_endpoints,
             mlkem_percent: $mlkem_percent
@@ -432,6 +446,7 @@ history_entry=$(jq -n \
     --argjson partial "$summary_partial" \
     --argjson none "$summary_none" \
     --argjson error "$summary_error" \
+    --argjson na "$summary_na" \
     --argjson total_endpoints "$total_endpoints_all" \
     --argjson mlkem_endpoints "$mlkem_endpoints_all" \
     --argjson mlkem_percent "$mlkem_percent" \
@@ -448,6 +463,7 @@ history_entry=$(jq -n \
             partial: $partial,
             none: $none,
             error: $error,
+            na: $na,
             total_endpoints: $total_endpoints,
             mlkem_endpoints: $mlkem_endpoints,
             mlkem_percent: $mlkem_percent
@@ -523,6 +539,7 @@ print_summary "Dashboard Export Complete" \
     "PARTIAL" "$summary_partial" \
     "NONE" "$summary_none" \
     "ERROR" "$summary_error" \
+    "N/A" "$summary_na" \
     "Total endpoints" "$total_endpoints_all" \
     "ML-KEM endpoints" "$mlkem_endpoints_all" \
     "ML-KEM percentage" "${mlkem_percent}%"

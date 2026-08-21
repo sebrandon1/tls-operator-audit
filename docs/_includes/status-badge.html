@@ -9,6 +9,8 @@
   <span class="badge badge-error" data-tooltip="Scan encountered errors for this operator">ERROR</span>
 {% elsif badge_status == "fail" %}
   <span class="badge badge-error" data-tooltip="Endpoint failed compliance check">FAIL</span>
+{% elsif badge_status == "n/a" %}
+  <span class="badge badge-none" data-tooltip="Operator was skipped (not available in a catalog)">N/A</span>
 {% else %}
   <span class="badge">{{ include.status }}</span>
 {% endif %}
