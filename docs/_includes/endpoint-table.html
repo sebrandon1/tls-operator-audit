@@ -16,7 +16,17 @@
   </thead>
   <tbody>
     {% for ep in include.endpoints %}
-    <tr>
+    {% comment %} Resolve the filter chip key once; mirrors the badge logic below. {% endcomment %}
+    {% if ep.compliance_status == "Compliant" %}
+      {% assign status_key = "compliant" %}
+    {% elsif ep.compliance_status == "Closed" %}
+      {% assign status_key = "closed" %}
+    {% elsif ep.compliance_status == "Timeout" %}
+      {% assign status_key = "timeout" %}
+    {% else %}
+      {% assign status_key = "other" %}
+    {% endif %}
+    <tr data-status="{{ status_key }}">
       <td>{{ ep.host }}:{{ ep.port }}</td>
       <td>{{ ep.source_kind }}/{{ ep.source_name }}</td>
       <td>{{ ep.source_namespace }}</td>

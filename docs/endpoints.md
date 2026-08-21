@@ -28,6 +28,18 @@ title: "Endpoints"
 
 <h2>Endpoints by Operator</h2>
 
+<div class="filter-bar">
+  <input type="text" id="endpoint-search" placeholder="Search endpoints..." oninput="filterEndpointTable()" aria-label="Search endpoints">
+  <div class="filter-buttons">
+    <button class="filter-btn active" data-filter="all" onclick="setEndpointStatusFilter('all')" aria-pressed="true" data-tooltip="Show all endpoints">All</button>
+    <button class="filter-btn" data-filter="compliant" onclick="setEndpointStatusFilter('compliant')" aria-pressed="false" data-tooltip="Show compliant endpoints only">Compliant</button>
+    <button class="filter-btn" data-filter="closed" onclick="setEndpointStatusFilter('closed')" aria-pressed="false" data-tooltip="Show endpoints whose port is not accepting connections">Closed</button>
+    <button class="filter-btn" data-filter="timeout" onclick="setEndpointStatusFilter('timeout')" aria-pressed="false" data-tooltip="Show endpoints that timed out during scanning">Timeout</button>
+    <button class="filter-btn" data-filter="other" onclick="setEndpointStatusFilter('other')" aria-pressed="false" data-tooltip="Show endpoints with other non-compliant statuses">Other</button>
+  </div>
+  <span id="endpoint-filter-counts"></span>
+</div>
+
 {% for op in data.operators %}
 {% if op.endpoints.size > 0 %}
 <div class="operator-group">
@@ -46,3 +58,5 @@ title: "Endpoints"
 </div>
 {% endif %}
 {% endfor %}
+
+<script src="{{ '/assets/js/endpoint-filters.js' | relative_url }}"></script>
