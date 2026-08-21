@@ -5,6 +5,28 @@ title: "Dashboard"
 
 {% assign data = site.data.scan-results %}
 
+{% comment %}
+Fleet-level certificate expiry counts. Mirrors the 7d/30d windows the
+endpoint detail view highlights per certificate.
+{% endcomment %}
+{% assign certs_tracked = 0 %}
+{% assign certs_expiring_7d = 0 %}
+{% assign certs_expiring_30d = 0 %}
+{% for op in data.operators %}
+{% for ep in op.endpoints %}
+{% if ep.certificate_info and ep.certificate_info.days_until_expiry != nil %}
+{% assign certs_tracked = certs_tracked | plus: 1 %}
+{% assign days = ep.certificate_info.days_until_expiry | plus: 0 %}
+{% if days <= 7 %}
+{% assign certs_expiring_7d = certs_expiring_7d | plus: 1 %}
+{% endif %}
+{% if days <= 30 %}
+{% assign certs_expiring_30d = certs_expiring_30d | plus: 1 %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
 <script>
 window.scanData = {{ data | jsonify }};
 </script>
@@ -31,6 +53,21 @@ window.scanData = {{ data | jsonify }};
   <div class="card card-error" data-tooltip="Operators that encountered scan errors">
     <div class="card-number">{{ data.summary.error }}</div>
     <div class="card-label">Error</div>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card card-accent" data-tooltip="Endpoints with certificate details captured">
+    <div class="card-number">{{ certs_tracked }}</div>
+    <div class="card-label">Certificates Tracked</div>
+  </div>
+  <div class="card card-error" data-tooltip="Certificates expiring within 7 days">
+    <div class="card-number">{{ certs_expiring_7d }}</div>
+    <div class="card-label">Expiring ≤ 7 Days</div>
+  </div>
+  <div class="card card-partial" data-tooltip="Certificates expiring within 30 days">
+    <div class="card-number">{{ certs_expiring_30d }}</div>
+    <div class="card-label">Expiring ≤ 30 Days</div>
   </div>
 </div>
 
