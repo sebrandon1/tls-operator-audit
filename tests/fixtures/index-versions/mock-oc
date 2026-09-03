@@ -7,17 +7,23 @@ if [[ "${1:-}" == "whoami" ]]; then
     exit 0
 fi
 
-if [[ "${1:-}" == "get" && "${2:-}" == "catalogsource" ]]; then
+# Batch packagemanifest query (parallelized version)
+# Called as: oc get packagemanifest -n openshift-marketplace -o json
+if [[ "${1:-}" == "get" && "${2:-}" == "packagemanifest" && "${3:-}" == "-n" ]]; then
     cat <<'EOF'
 {"items":[
-  {"metadata":{"name":"redhat-operators"},"spec":{"image":"registry.redhat.io/redhat/redhat-operator-index:v4.19"}},
-  {"metadata":{"name":"certified-operators"},"spec":{"image":"registry.redhat.io/redhat/certified-operator-index:v4.19"}},
-  {"metadata":{"name":"community-operators"},"spec":{"image":"registry.redhat.io/redhat/community-operator-index:v4.19"}}
+  {"metadata":{"name":"current-op"},"spec":{"namespace":"openshift-marketplace"}},
+  {"metadata":{"name":"stale-op"},"spec":{"namespace":"openshift-marketplace"}},
+  {"metadata":{"name":"certified-op"},"spec":{"namespace":"openshift-marketplace"}},
+  {"metadata":{"name":"community-op"},"spec":{"namespace":"openshift-marketplace"}},
+  {"metadata":{"name":"custom-op"},"spec":{"namespace":"openshift-marketplace"}}
 ]}
 EOF
     exit 0
 fi
 
+# Single packagemanifest query (original sequential version)
+# Called as: oc get packagemanifest <name> -n openshift-marketplace -o json
 if [[ "${1:-}" == "get" && "${2:-}" == "packagemanifest" ]]; then
     name="${3:-}"
     case "$name" in
@@ -50,6 +56,17 @@ EOF
             exit 1
             ;;
     esac
+    exit 0
+fi
+
+if [[ "${1:-}" == "get" && "${2:-}" == "catalogsource" ]]; then
+    cat <<'EOF'
+{"items":[
+  {"metadata":{"name":"redhat-operators"},"spec":{"image":"registry.redhat.io/redhat/redhat-operator-index:v4.19"}},
+  {"metadata":{"name":"certified-operators"},"spec":{"image":"registry.redhat.io/redhat/certified-operator-index:v4.19"}},
+  {"metadata":{"name":"community-operators"},"spec":{"image":"registry.redhat.io/redhat/community-operator-index:v4.19"}}
+]}
+EOF
     exit 0
 fi
 
