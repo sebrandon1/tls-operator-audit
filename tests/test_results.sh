@@ -166,4 +166,113 @@ test_junit_mlkem_failure_message
 test_junit_tls_failure_preserved
 test_junit_properties
 
+test_prune_results_keeps_latest() {
+    local base_dir="$TMPDIR_TEST/prune-test-1"
+    mkdir -p "$base_dir/my-operator"
+
+    mkdir -p "$base_dir/my-operator/20260101-100000"
+    mkdir -p "$base_dir/my-operator/20260102-100000"
+    mkdir -p "$base_dir/my-operator/20260103-100000"
+    mkdir -p "$base_dir/my-operator/20260104-100000"
+    mkdir -p "$base_dir/my-operator/20260105-100000"
+
+    bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        source "'"$REPO_DIR"'/lib/results.sh"
+        prune_results "'"$base_dir"'" "my-operator" 3 false
+    ' 2>/dev/null
+
+    local remaining
+    remaining=$(find "$base_dir/my-operator" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+    assert_eq "prune keeps 3 of 5" "3" "$remaining"
+
+    local kept
+    kept=$(find "$base_dir/my-operator" -mindepth 1 -maxdepth 1 -type d | sort)
+    assert_contains "oldest dirs removed" "$kept" "20260104-100000"
+    assert_contains "oldest dirs removed" "$kept" "20260105-100000"
+    assert_not_contains "newest dirs kept" "$kept" "20260101-100000"
+}
+
+test_prune_results_no_delete_when_under_limit() {
+    local base_dir="$TMPDIR_TEST/prune-test-2"
+    mkdir -p "$base_dir/my-operator"
+
+    mkdir -p "$base_dir/my-operator/20260101-100000"
+    mkdir -p "$base_dir/my-operator/20260102-100000"
+
+    bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        source "'"$REPO_DIR"'/lib/results.sh"
+        prune_results "'"$base_dir"'" "my-operator" 5 false
+    ' 2>/dev/null
+
+    local remaining
+    remaining=$(find "$base_dir/my-operator" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+    assert_eq "no delete when under limit" "2" "$remaining"
+}
+
+test_prune_results_dry_run_no_delete() {
+    local base_dir="$TMPDIR_TEST/prune-test-3"
+    mkdir -p "$base_dir/my-operator"
+
+    mkdir -p "$base_dir/my-operator/20260101-100000"
+    mkdir -p "$base_dir/my-operator/20260102-100000"
+    mkdir -p "$base_dir/my-operator/20260103-100000"
+
+    local dir_count_before
+    dir_count_before=$(find "$base_dir/my-operator" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+
+    bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        source "'"$REPO_DIR"'/lib/results.sh"
+        prune_results "'"$base_dir"'" "my-operator" 1 true
+    ' 2>/dev/null
+
+    local dir_count_after
+    dir_count_after=$(find "$base_dir/my-operator" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+    assert_eq "dry-run does not delete" "$dir_count_before" "$dir_count_after"
+}
+
+test_prune_results_no_operator_dir() {
+    local base_dir="$TMPDIR_TEST/prune-test-4"
+
+    bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        source "'"$REPO_DIR"'/lib/results.sh"
+        prune_results "'"$base_dir"'" "nonexistent-operator" 5 false
+    ' 2>/dev/null
+
+    assert_eq "no error when operator dir missing" "0" "$?"
+}
+
+test_prune_results_default_retention() {
+    local base_dir="$TMPDIR_TEST/prune-test-5"
+    mkdir -p "$base_dir/my-operator"
+
+    mkdir -p "$base_dir/my-operator/20260101-100000"
+    mkdir -p "$base_dir/my-operator/20260102-100000"
+    mkdir -p "$base_dir/my-operator/20260103-100000"
+
+    bash -c '
+        set -euo pipefail
+        source "'"$REPO_DIR"'/lib/common.sh"
+        source "'"$REPO_DIR"'/lib/results.sh"
+        prune_results "'"$base_dir"'" "my-operator" 2 false
+    ' 2>/dev/null
+
+    local remaining
+    remaining=$(find "$base_dir/my-operator" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+    assert_eq "prune with retention=2" "2" "$remaining"
+}
+
+test_prune_results_keeps_latest
+test_prune_results_no_delete_when_under_limit
+test_prune_results_dry_run_no_delete
+test_prune_results_no_operator_dir
+test_prune_results_default_retention
+
 print_test_summary

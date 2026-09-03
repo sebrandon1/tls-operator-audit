@@ -549,3 +549,47 @@ emit_mlkem_summary() {
         "$(summary_rows_json)"
 }
 
+# ============================================================================
+# RESULT RETENTION / PRUNING
+# ============================================================================
+
+prune_results() {
+    local results_base="$1"
+    local op_name="$2"
+    local retention="${3:-5}"
+    local dry_run="${4:-false}"
+
+    local op_results_dir="${results_base}/${op_name}"
+    if [[ ! -d "$op_results_dir" ]]; then
+        return 0
+    fi
+
+    local timestamps
+    timestamps=$(find "$op_results_dir" -mindepth 1 -maxdepth 1 -type d -name '[0-9]*-[0-9]*' | sort)
+    local count
+    count=$(echo "$timestamps" | grep -c . || true)
+
+    if [[ "$count" -le "$retention" ]]; then
+        return 0
+    fi
+
+    local to_delete=$((count - retention))
+    local dirs_to_remove
+    dirs_to_remove=$(echo "$timestamps" | head -n "$to_delete")
+
+    if [[ "$dry_run" == "true" ]]; then
+        log_info "[DRY-RUN] Would prune $to_delete old result(s) for $op_name (keeping $retention):"
+        echo "$dirs_to_remove" | while IFS= read -r dir; do
+            log_info "  $dir"
+        done
+        return 0
+    fi
+
+    echo "$dirs_to_remove" | while IFS= read -r dir; do
+        rm -rf "$dir"
+        log_info "Pruned old result: $dir"
+    done
+
+    log_success "Pruned $to_delete old result(s) for $op_name (retention: $retention)"
+}
+
