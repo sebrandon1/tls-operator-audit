@@ -23,6 +23,7 @@ Options:
   --exclude <name>        Exclude operator(s) from testing (repeatable)
   --skip-teardown         Leave operators installed after scanning
   --scan-wait <seconds>   Time to wait for endpoint discovery (default: 90)
+  --result-retention <N>  Keep only the N most recent result timestamps per operator (default: 5)
   --dry-run               Preview install/scan/teardown without changing the cluster
   --output-format <fmt>   Consolidated summary as json, csv, or markdown
   --update-jira           Post scan results as comments on operators.yaml Jira tickets
@@ -38,6 +39,7 @@ ONLY_OPERATOR=""
 EXCLUDE_OPERATORS=()
 SKIP_TEARDOWN=false
 SCAN_WAIT=90
+RESULT_RETENTION=5
 DRY_RUN=false
 OUTPUT_FORMAT=""
 UPDATE_JIRA=false
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
         --exclude)        require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
         --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
         --scan-wait)      require_arg "$1" "${2:-}"; SCAN_WAIT="$2"; shift 2 ;;
+        --result-retention) require_arg "$1" "${2:-}"; RESULT_RETENTION="$2"; shift 2 ;;
         --dry-run)        DRY_RUN=true; shift ;;
         --output-format)  require_arg "$1" "${2:-}"; OUTPUT_FORMAT="$2"; shift 2 ;;
         --update-jira)    UPDATE_JIRA=true; shift ;;
@@ -374,6 +377,7 @@ for i in $(seq 0 $((operator_count - 1))); do
             '{operator_version: $version, tco_version: $tco, ocp_version: $ocp}' > "$results_dir/metadata.json"
         collect_endpoint_data "$op_name" "$i" "$results_dir"
         maybe_comment_jira "$op_name" "$op_jira"
+        prune_results "$RESULTS_BASE" "$op_name" "$RESULT_RETENTION" "$DRY_RUN"
         continue
     fi
 
@@ -386,6 +390,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         SUMMARY_DETAIL+=("")
         SUMMARY_VERSIONS+=("N/A")
         maybe_comment_jira "$op_name" "$op_jira"
+        prune_results "$RESULTS_BASE" "$op_name" "$RESULT_RETENTION" "$DRY_RUN"
         continue
     fi
 
@@ -398,6 +403,7 @@ for i in $(seq 0 $((operator_count - 1))); do
         SUMMARY_DETAIL+=("")
         SUMMARY_VERSIONS+=("ERROR")
         maybe_comment_jira "$op_name" "$op_jira"
+        prune_results "$RESULTS_BASE" "$op_name" "$RESULT_RETENTION" "$DRY_RUN"
         continue
     fi
 
@@ -415,6 +421,8 @@ for i in $(seq 0 $((operator_count - 1))); do
 
     collect_endpoint_data "$op_name" "$i" "$results_dir"
     maybe_comment_jira "$op_name" "$op_jira"
+
+    prune_results "$RESULTS_BASE" "$op_name" "$RESULT_RETENTION" "$DRY_RUN"
 
     if [[ "$SKIP_TEARDOWN" == "false" ]]; then
         uninstall_operator "$op_name" "$op_install_ns"

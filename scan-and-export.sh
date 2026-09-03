@@ -20,6 +20,7 @@ Options:
   --exclude <name>        Exclude operator(s) from scanning (repeatable)
   --skip-scan             Skip scanning, just re-export from existing results
   --skip-teardown         Leave operators installed after scanning (default: true)
+  --result-retention <N>  Keep only the N most recent result timestamps per operator (default: 5)
   --dry-run               Preview scan actions without changing the cluster or dashboard
   --update-jira           Post scan results as comments on operators.yaml Jira tickets
   --verbose               Enable debug output
@@ -34,23 +35,25 @@ ONLY_OPERATOR=""
 EXCLUDE_OPERATORS=()
 SKIP_SCAN=false
 SKIP_TEARDOWN=true
+RESULT_RETENTION=5
 DRY_RUN=false
 UPDATE_JIRA=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --kubeconfig)     require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
-        --operators)      require_arg "$1" "${2:-}"; export OPERATORS_FILE="$2"; shift 2 ;;
-        --only)           require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
-        --exclude)        require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
-        --skip-scan)      SKIP_SCAN=true; shift ;;
-        --skip-teardown)  SKIP_TEARDOWN=true; shift ;;
-        --dry-run)        DRY_RUN=true; shift ;;
-        --update-jira)    UPDATE_JIRA=true; shift ;;
-        --verbose)        export LOG_LEVEL=4; shift ;;
-        --quiet)          export LOG_LEVEL=0; shift ;;
-        -h|--help)        usage; exit 0 ;;
-        *)                log_error "Unknown option: $1"; usage; exit 1 ;;
+        --kubeconfig)       require_arg "$1" "${2:-}"; KUBECONFIG_PATH="$2"; shift 2 ;;
+        --operators)        require_arg "$1" "${2:-}"; export OPERATORS_FILE="$2"; shift 2 ;;
+        --only)             require_arg "$1" "${2:-}"; ONLY_OPERATOR="$2"; shift 2 ;;
+        --exclude)          require_arg "$1" "${2:-}"; EXCLUDE_OPERATORS+=("$2"); shift 2 ;;
+        --skip-scan)        SKIP_SCAN=true; shift ;;
+        --skip-teardown)    SKIP_TEARDOWN=true; shift ;;
+        --result-retention) require_arg "$1" "${2:-}"; RESULT_RETENTION="$2"; shift 2 ;;
+        --dry-run)          DRY_RUN=true; shift ;;
+        --update-jira)      UPDATE_JIRA=true; shift ;;
+        --verbose)          export LOG_LEVEL=4; shift ;;
+        --quiet)            export LOG_LEVEL=0; shift ;;
+        -h|--help)          usage; exit 0 ;;
+        *)                  log_error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
 
@@ -89,6 +92,9 @@ if [[ "$SKIP_SCAN" == "false" ]]; then
     scan_args=(--kubeconfig "$KUBECONFIG")
     if [[ "$SKIP_TEARDOWN" == "true" ]]; then
         scan_args+=(--skip-teardown)
+    fi
+    if [[ "$RESULT_RETENTION" -gt 0 ]]; then
+        scan_args+=(--result-retention "$RESULT_RETENTION")
     fi
     if [[ -n "$ONLY_OPERATOR" ]]; then
         scan_args+=(--only "$ONLY_OPERATOR")
