@@ -89,7 +89,7 @@ RESULTS_BASE="$SCRIPT_DIR/results"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 if [[ -n "$ONLY_OPERATOR" ]]; then
-    match=$(yq -r --arg name "$ONLY_OPERATOR" '.operators[] | select(.name == $name) | .name' "$OPERATORS_FILE")
+    match=$(yq -r ".operators[] | select(.name == \"$ONLY_OPERATOR\") | .name" "$OPERATORS_FILE")
     if [[ -z "$match" ]]; then
         log_error "Operator '$ONLY_OPERATOR' not found in $OPERATORS_FILE"
         log_info "Available operators:"
