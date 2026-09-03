@@ -8,8 +8,12 @@ on:
 
 jobs:
   shellcheck:
-    name: ShellCheck
-    runs-on: ubuntu-latest
+    name: ShellCheck (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,8 +22,12 @@ jobs:
         run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck --severity=warning
 
   validate-yaml:
-    name: Validate operators.yaml
-    runs-on: ubuntu-latest
+    name: Validate operators.yaml (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,8 +39,12 @@ jobs:
         run: yq eval 'has("operators") and (.operators | length > 0)' operators.yaml
 
   unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
+    name: Unit Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
